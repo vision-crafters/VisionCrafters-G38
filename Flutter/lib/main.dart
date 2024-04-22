@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutterbasics/ChatScreen.dart';
 import 'package:flutterbasics/DashBoardScreen.dart';
 import 'package:flutterbasics/Speech_To_Text.dart';
+import 'camera.dart';
 
 void main() {
   runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -20,6 +22,7 @@ class MyApp extends StatelessWidget {
 }
 
 class HomePage extends StatelessWidget {
+  const HomePage({super.key});
   @override
   Widget build(BuildContext context) {
     const isRecording = false;
@@ -27,11 +30,11 @@ class HomePage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(  
+        title: const Text(
           "Vision Crafters",
           style: TextStyle(
               color: Colors.black, fontSize: 20, fontWeight: FontWeight.bold),
-        ),
+        ), //heading.
         actions: [
           IconButton(
             icon: const Icon(
@@ -47,6 +50,19 @@ class HomePage extends StatelessWidget {
         child: DashBoardScreen(),
       ),
       body: const Speech(),
+      floatingActionButton: FloatingActionButton(
+        heroTag: 'uniqueTag1', // Unique tag assigned here
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const MyApp2()),
+          );
+        },
+        child: const Icon(Icons.camera_alt),
+        backgroundColor: Colors.green,
+        tooltip: 'Open camera',
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
     );
   }
 }
