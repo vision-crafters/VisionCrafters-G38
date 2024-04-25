@@ -3,13 +3,15 @@ import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:flutterbasics/DashBoardScreen.dart';
 import 'package:flutterbasics/Speech_To_Text.dart';
 
+import 'upload_image.dart';
+
 void main() {
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
-
+  
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -35,7 +37,7 @@ class HomePage extends StatelessWidget {
           "Vision Crafters",
           style: TextStyle(
               color: Colors.black, fontSize: 20, fontWeight: FontWeight.bold),
-        ),
+        ), //heading.
         actions: [
           IconButton(
             icon: const Icon(
@@ -59,7 +61,12 @@ class HomePage extends StatelessWidget {
           children: [
             SpeedDialChild(
               child: const Icon(Icons.camera),
-              onTap: () {},
+              onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const UploadImageScreen()),
+              );
+              },
             ),
             SpeedDialChild(
               child: const Icon(Icons.video_call),
