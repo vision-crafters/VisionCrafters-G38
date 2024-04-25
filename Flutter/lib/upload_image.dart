@@ -1,6 +1,5 @@
 import 'dart:io';
 // import 'dart:js_interop';
-import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -136,7 +135,9 @@ class _UploadImageScreenState extends State<UploadImageScreen> {
                 child: Container(
                   child: imageGal == null
                       ? Center(
-                          child: Text("Pick an image"),
+                          child: ElevatedButton(
+                              onPressed: getImageGL,
+                              child: Text("Pick an image")),
                         )
                       : Container(
                           child: Center(
@@ -157,7 +158,9 @@ class _UploadImageScreenState extends State<UploadImageScreen> {
                 child: Container(
                   child: imageCam == null
                       ? Center(
-                          child: Text("Click an image"),
+                          child: ElevatedButton(
+                              onPressed: getImageCM,
+                              child: Text("Click an image")),
                         )
                       : Container(
                           child: Center(

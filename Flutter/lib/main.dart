@@ -11,7 +11,7 @@ void main() {
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
-  
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -54,6 +54,7 @@ class HomePage extends StatelessWidget {
       ),
       body: const Speech(),
       floatingActionButton: FloatingActionButton(
+        heroTag: "UniqueTag1",
         onPressed: () {},
         child: SpeedDial(
           animatedIcon: AnimatedIcons.menu_close,
@@ -62,10 +63,11 @@ class HomePage extends StatelessWidget {
             SpeedDialChild(
               child: const Icon(Icons.camera),
               onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const UploadImageScreen()),
-              );
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const UploadImageScreen()),
+                );
               },
             ),
             SpeedDialChild(
