@@ -36,6 +36,8 @@ dependencies:
   cupertino_icons: ^1.0.6
   flutter_sound: ^9.4.6
   speech_to_text: ^6.6.1
+  flutter_expandable_fab: ^2.0.0
+  flutter_speed_dial:
 
 dev_dependencies:
   flutter_test:

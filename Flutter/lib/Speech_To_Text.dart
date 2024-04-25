@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
 class Speech extends StatefulWidget {
-  const Speech({Key? key}) : super(key: key);
+  const Speech({super.key});
 
   @override
   State<Speech> createState() => _SpeechState();
@@ -12,7 +12,6 @@ class _SpeechState extends State<Speech> {
   final SpeechToText _speechToText = SpeechToText();
   bool _speechEnabled = false;
   String _wordsSpoken = "";
-  double _confidenceLevel = 0.0;
 
   @override
   void initState() {
@@ -27,9 +26,7 @@ class _SpeechState extends State<Speech> {
 
   void _startListening() async {
     await _speechToText.listen(onResult: _onSpeechResult);
-    setState(() {
-      _confidenceLevel = 0;
-    });
+    setState(() {});
   }
 
   void _stopListening() async {
@@ -40,7 +37,6 @@ class _SpeechState extends State<Speech> {
   void _onSpeechResult(result) {
     setState(() {
       _wordsSpoken = "${result.recognizedWords}";
-      _confidenceLevel = result.confidence;
     });
     print("Words spoken: $_wordsSpoken");
   }

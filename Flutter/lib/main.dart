@@ -1,25 +1,29 @@
 import 'package:flutter/material.dart';
-import 'package:flutterbasics/ChatScreen.dart';
+import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:flutterbasics/DashBoardScreen.dart';
 import 'package:flutterbasics/Speech_To_Text.dart';
 
 void main() {
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: "Vision Crafters",
       theme: ThemeData(primarySwatch: Colors.green),
-      home: HomePage(),
+      home: const HomePage(),
     );
   }
 }
 
 class HomePage extends StatelessWidget {
+  const HomePage({super.key});
+
   @override
   Widget build(BuildContext context) {
     const isRecording = false;
@@ -27,7 +31,7 @@ class HomePage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(  
+        title: const Text(
           "Vision Crafters",
           style: TextStyle(
               color: Colors.black, fontSize: 20, fontWeight: FontWeight.bold),
@@ -47,6 +51,24 @@ class HomePage extends StatelessWidget {
         child: DashBoardScreen(),
       ),
       body: const Speech(),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {},
+        child: SpeedDial(
+          animatedIcon: AnimatedIcons.menu_close,
+          direction: SpeedDialDirection.up,
+          children: [
+            SpeedDialChild(
+              child: const Icon(Icons.camera),
+              onTap: () {},
+            ),
+            SpeedDialChild(
+              child: const Icon(Icons.video_call),
+              onTap: () {},
+            ),
+          ],
+        ),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
     );
   }
 }
