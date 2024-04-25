@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutterbasics/ChatScreen.dart';
 import 'package:flutterbasics/DashBoardScreen.dart';
 import 'package:flutterbasics/Speech_To_Text.dart';
-import 'camera.dart';
+
+import 'upload_image.dart';
 
 void main() {
   runApp(MyApp());
@@ -55,7 +56,7 @@ class HomePage extends StatelessWidget {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const MyApp2()),
+            MaterialPageRoute(builder: (context) => const UploadImageScreen()),
           );
         },
         child: const Icon(Icons.camera_alt),
