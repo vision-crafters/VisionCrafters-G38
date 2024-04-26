@@ -1,6 +1,5 @@
 import 'dart:io';
 // import 'dart:js_interop';
-import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -22,6 +21,8 @@ class _UploadImageScreenState extends State<UploadImageScreen> {
   Future getImageGL() async {
     final pickedFile_Gallery = await _pickerGal.pickImage(
         source: ImageSource.gallery, imageQuality: 80);
+
+        
 
     if (pickedFile_Gallery != null) {
       imageGal = File(pickedFile_Gallery.path);
@@ -137,9 +138,8 @@ class _UploadImageScreenState extends State<UploadImageScreen> {
                   child: imageGal == null
                       ? Center(
                           child: ElevatedButton(
-                            onPressed: getImageGL,
-                            child: Text("Pick an image"),
-                          ),
+                              onPressed: getImageGL,
+                              child: Text("Pick an image")),
                         )
                       : Container(
                           child: Center(
@@ -161,9 +161,8 @@ class _UploadImageScreenState extends State<UploadImageScreen> {
                   child: imageCam == null
                       ? Center(
                           child: ElevatedButton(
-                            onPressed: getImageCM,
-                            child: Text("Click an image"),
-                          ),
+                              onPressed: getImageCM,
+                              child: Text("Click an image")),
                         )
                       : Container(
                           child: Center(
