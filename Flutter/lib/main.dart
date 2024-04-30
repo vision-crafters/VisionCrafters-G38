@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:flutterbasics/DashBoardScreen.dart';
 import 'package:flutterbasics/Speech_To_Text.dart';
-
+import 'package:flutterbasics/upload_video.dart';
 import 'upload_image.dart';
 
 void main() {
@@ -72,7 +72,13 @@ class HomePage extends StatelessWidget {
             ),
             SpeedDialChild(
               child: const Icon(Icons.video_call),
-              onTap: () {},
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const UploadVideoScreen()),
+                );
+              },
             ),
           ],
         ),
