@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:flutterbasics/DashBoardScreen.dart';
+import 'package:flutterbasics/Settings.dart';
 import 'package:flutterbasics/Speech_To_Text.dart';
+import 'package:speech_to_text/speech_to_text.dart';
 
 import 'upload_image.dart';
 
@@ -28,9 +30,6 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const isRecording = false;
-    const icons = isRecording ? Icons.stop : Icons.mic;
-
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -44,7 +43,12 @@ class HomePage extends StatelessWidget {
               Icons.settings,
               color: Colors.black,
             ),
-            onPressed: () {},
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SettingsPage()),
+              );
+            },
           ),
         ],
       ),
@@ -52,32 +56,83 @@ class HomePage extends StatelessWidget {
         width: MediaQuery.of(context).size.width * 0.8,
         child: DashBoardScreen(),
       ),
-      body: const Speech(),
-      floatingActionButton: FloatingActionButton(
-        heroTag: "UniqueTag1",
-        onPressed: () {},
-        child: SpeedDial(
-          animatedIcon: AnimatedIcons.menu_close,
-          direction: SpeedDialDirection.up,
-          children: [
-            SpeedDialChild(
-              child: const Icon(Icons.camera),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const UploadImageScreen()),
-                );
-              },
-            ),
-            SpeedDialChild(
-              child: const Icon(Icons.video_call),
-              onTap: () {},
-            ),
-          ],
+      body: const Center(
+        child: Text(
+          "Welcome to Vision Crafters",
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
+      floatingActionButton: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const SizedBox(
+                width: 20,
+              ),
+              FloatingActionButton(
+                shape: const CircleBorder(),
+                heroTag: "UniqueTag2",
+                onPressed: () {},
+                child: SpeedDial(
+                  animatedIcon: AnimatedIcons.menu_close,
+                  direction: SpeedDialDirection.up,
+                  children: [
+                    SpeedDialChild(
+                      shape: const CircleBorder(),
+                      child: const Icon(Icons.camera),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const UploadImageScreen()),
+                        );
+                      },
+                    ),
+                    SpeedDialChild(
+                      shape: const CircleBorder(),
+                      child: const Icon(Icons.video_call),
+                      onTap: () {},
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: TextFormField(
+                    decoration: InputDecoration(
+                      hintText: 'Enter your message...',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      filled: true,
+                      fillColor: const Color.fromARGB(255, 243, 240, 240),
+                      contentPadding: const EdgeInsets.symmetric(
+                          vertical: 16, horizontal: 8),
+                      hintStyle: TextStyle(color: Colors.grey[500]),
+                    ),
+                  ),
+                ),
+              ),
+              FloatingActionButton(
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => const Speech(),
+                  );
+                },
+                child: const Icon(Icons.mic),
+              ),
+            ],
+          ),
+        ],
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 }

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
 class Speech extends StatefulWidget {
-  const Speech({super.key});
+  const Speech({Key? key}) : super(key: key);
 
   @override
   State<Speech> createState() => _SpeechState();
@@ -43,46 +43,45 @@ class _SpeechState extends State<Speech> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                _speechToText.isListening
-                    ? "listening..."
-                    : _speechEnabled
-                        ? "Tap the microphone to start listening..."
-                        : "Speech not available",
-                style: const TextStyle(fontSize: 20.0),
-              ),
+    return AlertDialog(
+      title: const Text("Speech Recognition"),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            _speechToText.isListening
+                ? "Listening..."
+                : _speechEnabled
+                    ? "Tap the microphone to start listening..."
+                    : "Speech not available",
+            style: const TextStyle(fontSize: 16),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            _wordsSpoken,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w300,
             ),
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  _wordsSpoken,
-                  style: const TextStyle(
-                    fontSize: 25,
-                    fontWeight: FontWeight.w300,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _speechToText.isListening ? _stopListening : _startListening,
-        tooltip: 'Listen',
-        backgroundColor: Colors.red,
-        child: Icon(
-          _speechToText.isNotListening ? Icons.mic_off : Icons.mic,
-          color: Colors.white,
+      actions: [
+        TextButton(
+          onPressed:
+              _speechToText.isListening ? _stopListening : _startListening,
+          child: Text(
+            _speechToText.isNotListening ? "Start" : "Stop",
+            style: const TextStyle(color: Colors.red),
+          ),
         ),
-      ),
-      
+        TextButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+          child: const Text("Close"),
+        ),
+      ],
     );
   }
 }
