@@ -95,7 +95,13 @@ class HomePage extends StatelessWidget {
                     SpeedDialChild(
                       shape: const CircleBorder(),
                       child: const Icon(Icons.video_call),
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const UploadVideoScreen()),
+                        );
+                      },
                     ),
                   ],
                 ),
