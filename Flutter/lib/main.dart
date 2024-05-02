@@ -7,8 +7,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart';
 import 'firebase_options.dart';  
-
-
+import 'package:flutterbasics/upload_video.dart';
 import 'upload_image.dart';
 
 void main() async{
@@ -87,7 +86,13 @@ class HomePage extends StatelessWidget {
             ),
             SpeedDialChild(
               child: const Icon(Icons.video_call),
-              onTap: () {},
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const UploadVideoScreen()),
+                );
+              },
             ),
           ],
         ),

@@ -25,6 +25,8 @@ class _UploadImageScreenState extends State<UploadImageScreen> {
     final pickedFile_Gallery = await _pickerGal.pickImage(
         source: ImageSource.gallery, imageQuality: 80);
 
+        
+
     if (pickedFile_Gallery != null) {
       imageGal = File(pickedFile_Gallery.path);
       setState(() {});
