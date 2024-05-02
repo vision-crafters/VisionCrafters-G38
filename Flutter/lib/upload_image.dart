@@ -4,6 +4,9 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:modal_progress_hud_nsn/modal_progress_hud_nsn.dart';
+import 'package:cloud_functions/cloud_functions.dart';
+import 'dart:convert';
+
 
 class UploadImageScreen extends StatefulWidget {
   const UploadImageScreen({Key? key}) : super(key: key);
@@ -48,30 +51,25 @@ class _UploadImageScreenState extends State<UploadImageScreen> {
     setState(() {
       showSpinner = true;
     });
-    var stream = new http.ByteStream(imageGal!.openRead());
-    stream.cast();
 
-    var length = await imageGal!.length();
+    final bytes = await imageGal!.readAsBytes();
+    final base64Image = base64Encode(bytes);
 
-    //coming soon.
-    var uri = Uri.parse("https://fakestoreapi.com/products");
+    final response = await FirebaseFunctions.instance.httpsCallable('image').call(<String, dynamic>{
+      'data': base64Image,
+      'mime_type': 'image/jpeg'
+    });
 
-    var request = new http.MultipartRequest('POST', uri);
-
-    request.fields['title'] = "Static title";
-
-    var multiport = new http.MultipartFile('image', stream, length);
-
-    request.files.add(multiport);
-
-    var response = await request.send();
-
-    if (response.statusCode == 200) {
+    if (response.data != null) {
       setState(() {
         showSpinner = false;
       });
 
-      print("image Uploaded");
+    final data = response.data;
+    print(data);
+    print('Danger: ${data["Danger"]}\nTitle: ${data["Title"]}\nDescription: ${data["Description"]}');
+            
+
     } else {
       print("failed to upload");
       setState(() {
@@ -84,30 +82,23 @@ class _UploadImageScreenState extends State<UploadImageScreen> {
     setState(() {
       showSpinner = true;
     });
-    var stream = new http.ByteStream(imageCam!.openRead());
-    stream.cast();
+    final bytes = await imageCam!.readAsBytes();
+    final base64Image = base64Encode(bytes);
 
-    var length = await imageCam!.length();
+    final response = await FirebaseFunctions.instance.httpsCallable('image').call(<String, dynamic>{
+      'data': base64Image,
+      'mime_type': 'image/jpeg'
+    });
 
-    //coming soon.
-    var uri = Uri.parse("https://fakestoreapi.com/products");
-
-    var request = new http.MultipartRequest('POST', uri);
-
-    request.fields['title'] = "Static title";
-
-    var multiport = new http.MultipartFile('image', stream, length);
-
-    request.files.add(multiport);
-
-    var response = await request.send();
-
-    if (response.statusCode == 200) {
+    if (response.data != null) {
       setState(() {
         showSpinner = false;
       });
 
-      print("image Uploaded");
+    final data = response.data;
+    print(data);
+    print('Danger: ${data["Danger"]}\nTitle: ${data["Title"]}\nDescription: ${data["Description"]}');
+      
     } else {
       print("failed to upload");
       setState(() {
