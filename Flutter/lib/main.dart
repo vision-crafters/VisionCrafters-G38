@@ -18,7 +18,9 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: "Vision Crafters",
-      theme: ThemeData(primarySwatch: Colors.green),
+      theme: ThemeData.light(),
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.system,
       home: const HomePage(),
     );
   }
@@ -33,14 +35,11 @@ class HomePage extends StatelessWidget {
       appBar: AppBar(
         title: const Text(
           "Vision Crafters",
-          style: TextStyle(
-              color: Colors.black, fontSize: 20, fontWeight: FontWeight.bold),
-        ), //heading.
+        ),
         actions: [
           IconButton(
             icon: const Icon(
               Icons.settings,
-              color: Colors.black,
             ),
             onPressed: () {
               Navigator.push(

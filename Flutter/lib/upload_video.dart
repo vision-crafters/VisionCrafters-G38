@@ -50,7 +50,7 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
                 child: Center(
               child: ElevatedButton(
                   onPressed: () => getVideoFile(ImageSource.gallery),
-                  child: Text("Pick a video")),
+                  child: const Text("Pick a video")),
             )
                 // : Container(
                 //     child: Center(
@@ -72,7 +72,7 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
                 child: Center(
               child: ElevatedButton(
                   onPressed: () => getVideoFile(ImageSource.camera),
-                  child: Text("Take a Video")),
+                  child: const Text("Take a Video")),
             )
                 // : Container(
                 //     child: Center(
@@ -86,7 +86,7 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
                 //   ),
                 ),
           ),
-          SizedBox(
+          const SizedBox(
             height: 150,
           ),
         ],
