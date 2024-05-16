@@ -17,7 +17,7 @@ void main() async{
 
   // Point to local emulator during development
   if(kDebugMode){
-    const host = '192.168.109.26';  // Localhost IP
+    const host = '192.168.29.240';  // Localhost IP
     FirebaseFunctions.instanceFor(region: "us-central1").useFunctionsEmulator(host, 5001);
     FirebaseStorage.instance.useStorageEmulator(host, 9199);
   }
