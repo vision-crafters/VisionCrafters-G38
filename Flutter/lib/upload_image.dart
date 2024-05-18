@@ -10,7 +10,9 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'dart:convert';
 
 class UploadImageScreen extends StatefulWidget {
-  const UploadImageScreen({Key? key}) : super(key: key);
+  final Function(String) addDescriptionCallback;
+  const UploadImageScreen({Key? key, required this.addDescriptionCallback})
+      : super(key: key);
 
   @override
   _UploadImageScreenState createState() => _UploadImageScreenState();
@@ -21,6 +23,7 @@ class _UploadImageScreenState extends State<UploadImageScreen> {
   final _pickerGal = ImagePicker();
   final _pickerCam = ImagePicker();
   bool showSpinner = false;
+  List<String> descriptions = [];
 
   Future getImageGL() async {
     final pickedFile_Gallery = await _pickerGal.pickImage(
@@ -31,7 +34,7 @@ class _UploadImageScreenState extends State<UploadImageScreen> {
     if (pickedFile_Gallery != null) {
       imageGal = File(pickedFile_Gallery.path);
       setState(() {});
-      uploadImageFromGallery();
+      await uploadImageFromGallery();
     } else {
       print("No image selected");
     }
@@ -45,7 +48,7 @@ class _UploadImageScreenState extends State<UploadImageScreen> {
     if (pickedFile_Camera != null) {
       imageCam = File(pickedFile_Camera.path);
       setState(() {});
-      uploadImageFromCamera();
+      await uploadImageFromCamera();
     } else {
       print("No image Captured");
     }
@@ -86,6 +89,13 @@ class _UploadImageScreenState extends State<UploadImageScreen> {
         showSpinner = false;
       });
 
+      final description =
+          'Danger: ${response.data["Danger"]}\nTitle: ${response.data["Title"]}\nDescription: ${response.data["Description"]}';
+
+      widget.addDescriptionCallback(description);
+
+      Navigator.pop(context);
+      print(description);
       final data = response.data;
       print(data);
       print(
@@ -132,6 +142,12 @@ class _UploadImageScreenState extends State<UploadImageScreen> {
         showSpinner = false;
       });
 
+      final description =
+          'Danger: ${response.data["Danger"]}\nTitle: ${response.data["Title"]}\nDescription: ${response.data["Description"]}';
+
+      widget.addDescriptionCallback(description);
+      Navigator.pop(context);
+      print(description);
       final data = response.data;
 
       print(data);
@@ -149,66 +165,67 @@ class _UploadImageScreenState extends State<UploadImageScreen> {
   @override
   Widget build(BuildContext context) {
     return ModalProgressHUD(
-        inAsyncCall: showSpinner,
-        child: Scaffold(
-          appBar: AppBar(
-            title: const Text('Upload Image'),
-          ),
-          body: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              GestureDetector(
-                onTap: () {
-                  getImageGL();
-                },
-                child: Container(
-                  child: imageGal == null
-                      ? Center(
-                          child: ElevatedButton(
-                              onPressed: getImageGL,
-                              child: Text("Pick an image")),
-                        )
-                      : Container(
-                          child: Center(
-                            child: Image.file(
-                              File(imageGal!.path).absolute,
-                              height: 100,
-                              width: 100,
-                              fit: BoxFit.cover,
-                            ),
+      inAsyncCall: showSpinner,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Upload Image'),
+        ),
+        body: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            GestureDetector(
+              onTap: () {
+                getImageGL();
+              },
+              child: Container(
+                child: imageGal == null
+                    ? Center(
+                        child: ElevatedButton(
+                            onPressed: getImageGL,
+                            child: Text("Pick an image")),
+                      )
+                    : Container(
+                        child: Center(
+                          child: Image.file(
+                            File(imageGal!.path).absolute,
+                            height: 100,
+                            width: 100,
+                            fit: BoxFit.cover,
                           ),
                         ),
-                ),
+                      ),
               ),
-              GestureDetector(
-                onTap: () {
-                  getImageCM();
-                },
-                child: Container(
-                  child: imageCam == null
-                      ? Center(
-                          child: ElevatedButton(
-                              onPressed: getImageCM,
-                              child: Text("Click an image")),
-                        )
-                      : Container(
-                          child: Center(
-                            child: Image.file(
-                              File(imageCam!.path).absolute,
-                              height: 100,
-                              width: 100,
-                              fit: BoxFit.cover,
-                            ),
+            ),
+            GestureDetector(
+              onTap: () {
+                getImageCM();
+              },
+              child: Container(
+                child: imageCam == null
+                    ? Center(
+                        child: ElevatedButton(
+                            onPressed: getImageCM,
+                            child: Text("Click an image")),
+                      )
+                    : Container(
+                        child: Center(
+                          child: Image.file(
+                            File(imageCam!.path).absolute,
+                            height: 100,
+                            width: 100,
+                            fit: BoxFit.cover,
                           ),
                         ),
-                ),
+                      ),
               ),
-              SizedBox(
-                height: 150,
-              ),
-            ],
-          ),
-        ));
+            ),
+            SizedBox(
+              height: 150,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
