@@ -3,7 +3,6 @@ import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:flutterbasics/DashBoardScreen.dart';
 import 'package:flutterbasics/Settings.dart';
 import 'package:flutterbasics/Speech_To_Text.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart';
@@ -18,11 +17,9 @@ void main() async {
       options: DefaultFirebaseOptions.currentPlatform); // Initialize Firebase
 
   // Point to local emulator during development
-  if (kDebugMode) {
-    const host = '192.168.244.168'; // Localhost IP
-    FirebaseFunctions.instanceFor(region: "us-central1")
-        .useFunctionsEmulator(host, 5001);
-    FirebaseStorage.instance.useStorageEmulator(host, 9199);
+  if(kDebugMode){
+    const host = '192.168.0.216';  // Localhost IP
+    FirebaseFunctions.instanceFor(region: "us-central1").useFunctionsEmulator(host, 5001);
   }
   runApp(const MyApp());
 }
