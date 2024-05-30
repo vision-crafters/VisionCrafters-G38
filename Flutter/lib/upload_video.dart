@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutterbasics/upload_form.dart';
-import 'package:http/http.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
-import 'package:modal_progress_hud_nsn/modal_progress_hud_nsn.dart';
-import 'package:get/get.dart';
+import 'package:cloud_functions/cloud_functions.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:uuid/uuid.dart';
 
 class UploadVideoScreen extends StatefulWidget {
   const UploadVideoScreen({super.key});
@@ -18,17 +17,35 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
   final _pickerGal = ImagePicker();
   final _pickerCam = ImagePicker();
 
-  getVideoFile(ImageSource sourceImg) async {
+  Future<void> getVideoFile(ImageSource sourceImg) async {
+    // Firebase storage reference
+    final storageRef = FirebaseStorage.instance.ref();   
     final videoFile = await ImagePicker().pickVideo(source: sourceImg);
 
     if (videoFile != null) {
-      //video upload form
-      Get.to(
-        UploadForm(
-          videoFile: File(videoFile.path),
-          videoPath: videoFile.path,
-        ),
-      );
+       // Generate unique ID for the video
+      final uniqueId = Uuid().v1();
+      final fileRef = storageRef.child('$uniqueId.mp4');
+      
+      // Print the path of the picked video
+      print('Picked video path: ${videoFile.path}');
+      
+      // Upload the picked video file to Firebase storage
+      await fileRef.putFile(File(videoFile.path));
+      
+      // Get the download URL of the uploaded video
+      final videoUrl = await fileRef.getDownloadURL();
+      
+      // Call the Firebase function to process the video
+      final response = await FirebaseFunctions.instance.httpsCallable('video').call({
+        'data': videoUrl,
+        'mime_type': 'video/mp4'
+      });
+      
+      // Extract and print response data
+      final data = response.data;
+      print('Danger: ${data["Danger"]}\nTitle: ${data["Title"]}\nDescription: ${data["Description"]}');
+
     }
   }
 
