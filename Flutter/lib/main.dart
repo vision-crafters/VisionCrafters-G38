@@ -7,18 +7,21 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart';
-import 'firebase_options.dart';  
+import 'firebase_options.dart';
 import 'package:flutterbasics/upload_video.dart';
 import 'upload_image.dart';
 
-void main() async{
-  WidgetsFlutterBinding.ensureInitialized();  // Ensure Flutter Firebase is initialized
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);  // Initialize Firebase
+void main() async {
+  WidgetsFlutterBinding
+      .ensureInitialized(); // Ensure Flutter Firebase is initialized
+  await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform); // Initialize Firebase
 
   // Point to local emulator during development
-  if(kDebugMode){
-    const host = '192.168.109.26';  // Localhost IP
-    FirebaseFunctions.instanceFor(region: "us-central1").useFunctionsEmulator(host, 5001);
+  if (kDebugMode) {
+    const host = '192.168.29.240'; // Localhost IP
+    FirebaseFunctions.instanceFor(region: "us-central1")
+        .useFunctionsEmulator(host, 5001);
     FirebaseStorage.instance.useStorageEmulator(host, 9199);
   }
   runApp(const MyApp());
@@ -40,8 +43,21 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  List<String> descriptions = [];
+
+  void addDescription(String description) {
+    setState(() {
+      descriptions.add(description);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -68,14 +84,28 @@ class HomePage extends StatelessWidget {
         width: MediaQuery.of(context).size.width * 0.8,
         child: DashBoardScreen(),
       ),
-      body: const Center(
-        child: Text(
-          "Welcome to Vision Crafters",
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
+      body: Column(
+        children: [
+          const Center(
+            child: Text(
+              "Welcome to Vision Crafters",
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
-        ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: descriptions.length,
+              itemBuilder: (context, index) {
+                return ListTile(
+                  title: Text(descriptions[index]),
+                );
+              },
+            ),
+          ),
+        ],
       ),
       floatingActionButton: Column(
         mainAxisAlignment: MainAxisAlignment.end,
@@ -101,7 +131,10 @@ class HomePage extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (context) => const UploadImageScreen()),
+                            builder: (context) =>  UploadImageScreen(
+                              addDescriptionCallback: addDescription,
+                            ),
+                          ),
                         );
                       },
                     ),
@@ -129,7 +162,7 @@ class HomePage extends StatelessWidget {
                         borderRadius: BorderRadius.circular(10),
                       ),
                       filled: true,
-                      fillColor: const Color.fromARGB(255, 243, 240, 240),
+                      fillColor: Color.fromARGB(255, 0, 0, 0),
                       contentPadding: const EdgeInsets.symmetric(
                           vertical: 16, horizontal: 8),
                       hintStyle: TextStyle(color: Colors.grey[500]),
