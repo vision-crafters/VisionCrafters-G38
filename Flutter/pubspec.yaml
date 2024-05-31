@@ -45,6 +45,7 @@ dependencies:
   firebase_storage: ^11.7.4
   get: ^4.6.1
   video_player: ^2.2.14
+  mime: ^1.0.5
   uuid: ^4.4.0
 
 dev_dependencies:

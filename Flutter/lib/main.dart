@@ -102,85 +102,84 @@ class _HomePageState extends State<HomePage> {
               },
             ),
           ),
-        ],
-      ),
-      floatingActionButton: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const SizedBox(
-                width: 20,
-              ),
-              FloatingActionButton(
-                shape: const CircleBorder(),
-                heroTag: "UniqueTag2",
-                onPressed: () {},
-                child: SpeedDial(
-                  animatedIcon: AnimatedIcons.menu_close,
-                  direction: SpeedDialDirection.up,
-                  children: [
-                    SpeedDialChild(
-                      shape: const CircleBorder(),
-                      child: const Icon(Icons.camera),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>  UploadImageScreen(
-                              addDescriptionCallback: addDescription,
+          Container(
+            color: Colors.black,
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              children: [
+                FloatingActionButton(
+                  shape: const CircleBorder(),
+                  heroTag: "UniqueTag2",
+                  onPressed: () {},
+                  child: SpeedDial(
+                    animatedIcon: AnimatedIcons.menu_close,
+                    direction: SpeedDialDirection.up,
+                    children: [
+                      SpeedDialChild(
+                        shape: const CircleBorder(),
+                        child: const Icon(Icons.camera),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => UploadImageScreen(
+                                addDescriptionCallback: addDescription,
+                              ),
                             ),
-                          ),
-                        );
-                      },
-                    ),
-                    SpeedDialChild(
-                      shape: const CircleBorder(),
-                      child: const Icon(Icons.video_call),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => const UploadVideoScreen()),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: TextFormField(
-                    decoration: InputDecoration(
-                      hintText: 'Enter your message...',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
+                          );
+                        },
                       ),
-                      filled: true,
-                      fillColor: Color.fromARGB(255, 0, 0, 0),
-                      contentPadding: const EdgeInsets.symmetric(
-                          vertical: 16, horizontal: 8),
-                      hintStyle: TextStyle(color: Colors.grey[500]),
+                      SpeedDialChild(
+                        shape: const CircleBorder(),
+                        child: const Icon(Icons.video_call),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) =>
+                                    const UploadVideoScreen()),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    child: TextFormField(
+                      decoration: InputDecoration(
+                        hintText: 'Enter your message...',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        filled: true,
+                        fillColor: const Color.fromARGB(255, 0, 0, 0),
+                        contentPadding: const EdgeInsets.symmetric(
+                            vertical: 16, horizontal: 8),
+                        hintStyle: TextStyle(color: Colors.grey[500]),
+                      ),
                     ),
                   ),
                 ),
-              ),
-              FloatingActionButton(
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) => const Speech(),
-                  );
-                },
-                child: const Icon(Icons.mic),
-              ),
-            ],
+                FloatingActionButton(
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => const Speech(),
+                    );
+                  },
+                  child: const Icon(Icons.mic),
+                ),
+              ],
+            ),
           ),
+
+          // ),
         ],
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
+    floatingActionButtonLocation:
+    FloatingActionButtonLocation.centerDocked;
   }
 }

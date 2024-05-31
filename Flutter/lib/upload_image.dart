@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:mime/mime.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:modal_progress_hud_nsn/modal_progress_hud_nsn.dart';
@@ -30,7 +31,7 @@ class _UploadImageScreenState extends State<UploadImageScreen> {
     if (pickedFile_Gallery != null) {
       imageGal = File(pickedFile_Gallery.path);
       setState(() {});
-      await uploadImageFromGallery();
+      await uploadImage(imageGal);
     } else {
       print("No image selected");
     }
@@ -44,28 +45,25 @@ class _UploadImageScreenState extends State<UploadImageScreen> {
     if (pickedFile_Camera != null) {
       imageCam = File(pickedFile_Camera.path);
       setState(() {});
-      await uploadImageFromCamera();
+      await uploadImage(imageCam);
     } else {
       print("No image Captured");
     }
   }
 
-  Future<void> uploadImageFromGallery() async {
+  //real
+  Future<void> uploadImage(File? imageFile) async {
+    if (imageFile == null) return;
+
     setState(() {
       showSpinner = true;
     });
 
-    final bytes = await imageGal!.readAsBytes();
+    final bytes = await imageFile.readAsBytes();
     final base64Image = base64Encode(bytes);
+    final mimeType = lookupMimeType(imageFile.path);
 
-    // Determine the file extension of the selected image
-    String mimeType;
-    if (imageGal!.path.toLowerCase().endsWith('.jpg') ||
-        imageGal!.path.toLowerCase().endsWith('.jpeg')) {
-      mimeType = 'image/jpeg';
-    } else if (imageGal!.path.toLowerCase().endsWith('.png')) {
-      mimeType = 'image/png';
-    } else {
+    if (mimeType == null) {
       print('Unsupported file format');
       setState(() {
         showSpinner = false;
@@ -97,66 +95,13 @@ class _UploadImageScreenState extends State<UploadImageScreen> {
       print(
           'Danger: ${data["Danger"]}\nTitle: ${data["Title"]}\nDescription: ${data["Description"]}');
     } else {
-      print("failed to upload");
-      setState(() {
-        showSpinner = true;
-      });
-    }
-  }
-
-  Future<void> uploadImageFromCamera() async {
-    setState(() {
-      showSpinner = true;
-    });
-    final bytes = await imageCam!.readAsBytes();
-    final base64Image = base64Encode(bytes);
-
-    // Determine the file extension of the captured image
-    String mimeType;
-    if (imageCam!.path.toLowerCase().endsWith('.jpg') ||
-        imageCam!.path.toLowerCase().endsWith('.jpeg')) {
-      mimeType = 'image/jpeg';
-    } else if (imageCam!.path.toLowerCase().endsWith('.png')) {
-      mimeType = 'image/png';
-    } else {
-      print('Unsupported file format');
+      print("Failed to upload");
       setState(() {
         showSpinner = false;
       });
-      return;
-    }
-
-    final response = await FirebaseFunctions.instance
-        .httpsCallable('image')
-        .call(<String, dynamic>{
-      'data': base64Image,
-      'mime_type': mimeType,
-    });
-
-    if (response.data != null) {
-      setState(() {
-        showSpinner = false;
-      });
-
-      final description =
-          'Danger: ${response.data["Danger"]}\nTitle: ${response.data["Title"]}\nDescription: ${response.data["Description"]}';
-
-      widget.addDescriptionCallback(description);
-      Navigator.pop(context);
-      print(description);
-      final data = response.data;
-
-      print(data);
-
-      print(
-          'Danger: ${data["Danger"]}\nTitle: ${data["Title"]}\nDescription: ${data["Description"]}');
-    } else {
-      print("failed to upload");
-      setState(() {
-        showSpinner = true;
-      });
     }
   }
+  //end of real
 
   @override
   Widget build(BuildContext context) {
