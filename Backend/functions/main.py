@@ -4,6 +4,7 @@
 
 from firebase_functions import https_fn
 from firebase_admin import initialize_app
+from dotenv import load_dotenv
 import vertexai
 import google.generativeai as genai
 import vertexai.generative_models as vgenai
@@ -12,16 +13,15 @@ import os
 import re
 import urllib.parse
 
+load_dotenv(".env")
 initialize_app()
 
 
 def convert_to_gs_url(url):
     match = re.search(r'/b/([^/]+)/o/([^?]+)', url)
-    print(match)
     if match:
         bucket = match.group(1)
         path = urllib.parse.unquote(match.group(2))
-        print(path)
         return f"gs://{bucket}/{path}"
     else:
         raise ValueError("Invalid URL format")
@@ -30,11 +30,19 @@ def convert_to_gs_url(url):
 def image(req: https_fn.CallableRequest):
     GOOGLE_API_KEY=os.environ.get('GOOGLE_API_KEY')
     genai.configure(api_key=GOOGLE_API_KEY)
-    model = genai.GenerativeModel('gemini-pro-vision', generation_config={'max_output_tokens': 512})
+    config = genai.GenerationConfig(max_output_tokens=1024, temperature=0.6, response_mime_type='plain/text')
+    model = genai.GenerativeModel('gemini-1.5-flash')
+    data = req.data.get('data')
+    mime_type = req.data.get('mime_type')
+    filePart = {
+                'mime_type': mime_type,
+                'data': data
+                }
     query = req.data.get('query')
     if query:
         textPart = query
     else:
+        config = genai.GenerationConfig(max_output_tokens=1024, temperature=0.6, response_mime_type='application/json')
         textPart = """
         Describe the image in detail. Also provide a suitable title for the image. 
         Answer whether there is anything dangerous with a 'Yes/No' for a visually impaired person in the image. Only if 'Yes', provide the information regarding the danger.
@@ -52,31 +60,40 @@ def image(req: https_fn.CallableRequest):
             "Title": "Cozy Coffee Shop",
             "Description": "An image capturing the cozy atmosphere of a coffee shop. The interior is warmly lit with soft, ambient lighting. There are comfortable seating arrangements, including plush armchairs and wooden tables. A chalkboard on the wall displays the day's specials, and there is a handwritten sign near the entrance that says 'Welcome to Our Happy Place'. Customers are seen chatting and enjoying their drinks, creating a welcoming and inviting environment."
         }
-        """
-    data = req.data.get('data')
-    mime_type = req.data.get('mime_type')
-    filePart = {
-                'mime_type': mime_type,
-                'data': data
-                }
-    
-    response = model.generate_content([textPart, filePart])
-    print(response.candidates[0].content.parts[0].text)
 
-    stripResponse = response.candidates[0].content.parts[0].text.strip(' `json')
-    print(stripResponse)
-    response_dict = json.loads(stripResponse)
+        {
+            "Danger": "No",
+            "Title": "Peaceful Beach at Sunset",
+            "Description": "An image capturing a peaceful beach at sunset. The sky is painted with vibrant hues of orange and pink as the sun sets over the horizon. The beach is mostly empty, with gentle waves lapping at the shore. A few seashells are scattered across the sand, and there are distant silhouettes of seagulls flying."
+        }
+
+        {
+            "Danger": "Yes",
+            "Title": "Busy Train Station Platform",
+            "Description": "An image of a crowded train station platform. There are numerous passengers standing near the edge of the platform, waiting for the train. The platform is narrow, and there are no tactile paving strips to guide visually impaired individuals. Additionally, the fast-moving trains and the lack of clear barriers make it a potentially dangerous environment."
+        }
+        """
+    response = model.generate_content([textPart, filePart], generation_config=config)
+    print(response.candidates[0].content.parts[0].text)
+    response_dict = json.loads(response.candidates[0].content.parts[0].text)
     return response_dict
 
 
 @https_fn.on_call()
 def video(req: https_fn.CallableRequest):
     vertexai.init(project='vision-crafters', location='us-central1')
-    model = vgenai.GenerativeModel('gemini-pro-vision', generation_config={'max_output_tokens': 512})
+    config = vgenai.GenerationConfig(max_output_tokens=1024, temperature=0.6, response_mime_type='plain/text')
+    model = vgenai.GenerativeModel('gemini-1.5-flash')
+    data = req.data.get('data')
+    mime_type = req.data.get('mime_type')
+    filePart = vgenai.Part.from_uri(convert_to_gs_url(data), mime_type=mime_type)
+    print(data)
+    print(convert_to_gs_url(data))
     query = req.data.get('query')
     if query:
         textPart = query
     else:
+        config = vgenai.GenerationConfig(max_output_tokens=1024, temperature=0.6, response_mime_type='application/json')
         textPart = """
         Describe the video in detail. Also provide a suitable title for the video. 
         Answer whether there is anything dangerous with a Yes/No for a visually impaired person in the video. Only if 'Yes', provide the information regarding the danger.
@@ -94,14 +111,20 @@ def video(req: https_fn.CallableRequest):
             "Title": "Quiet Library Reading Room",
             "Description": "A video of a quiet library reading room. The room is spacious and well-lit with rows of bookshelves and comfortable seating areas. A sign on the wall reads 'Please Keep Silence'. There are large windows letting in natural light, and the environment is calm and orderly, making it an ideal place for studying and reading."
         }
+
+        {
+            "Danger": "No",
+            "Title": "Family Picnic in a Sunny Park",
+            "Description": "A video of a family enjoying a picnic in a sunny park. The area is flat and grassy, with children playing nearby and adults sitting on blankets under the shade of trees. There are picnic tables, a small playground, and a clear pathway leading to restrooms and water fountains. The environment is safe and family-friendly."
+        }
+
+        {
+            "Danger": "Yes",
+            "Title": "Mountain Hiking Trail with Steep Cliffs",
+            "Description": "A video showing a narrow mountain hiking trail with steep cliffs on one side. The trail is rugged and uneven, with loose rocks and a steep drop-off. Hikers are seen carefully navigating the path, using trekking poles for stability. The lack of guardrails and the proximity to the cliff edge make it very dangerous for visually impaired individuals."
+        }
         """
-    data = req.data.get('data')
-    mime_type = req.data.get('mime_type')
-    filePart = vgenai.Part.from_uri(convert_to_gs_url(data), mime_type=mime_type)
-    print(data)
-    print(convert_to_gs_url(data))
-    response = model.generate_content([textPart, filePart])
-    stripResponse = response.candidates[0].content.parts[0].text.strip(' `json')
-    print(stripResponse)
-    response_dict = json.loads(stripResponse)
+    response = model.generate_content([textPart, filePart], generation_config=config)
+    print(response.candidates[0].content.parts[0].text)
+    response_dict = json.loads(response.candidates[0].content.parts[0].text)
     return response_dict
