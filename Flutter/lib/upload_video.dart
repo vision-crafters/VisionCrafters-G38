@@ -83,7 +83,7 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
           ),
           GestureDetector(
             onTap: () {
-              getVideoFile(ImageSource.gallery);
+              getVideoFile(ImageSource.camera);
             },
             child: Container(
                 child: Center(

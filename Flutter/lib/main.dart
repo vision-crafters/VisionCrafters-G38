@@ -9,16 +9,18 @@ import 'package:flutter/foundation.dart';
 import 'firebase_options.dart';
 import 'package:flutterbasics/upload_video.dart';
 import 'upload_image.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
   WidgetsFlutterBinding
       .ensureInitialized(); // Ensure Flutter Firebase is initialized
+  await dotenv.load(fileName: ".env");
   await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform); // Initialize Firebase
 
   // Point to local emulator during development
   if(kDebugMode){
-    const host = '192.168.0.216';  // Localhost IP
+    final host = dotenv.get('HOST');  // Localhost IP
     FirebaseFunctions.instanceFor(region: "us-central1").useFunctionsEmulator(host, 5001);
   }
   runApp(const MyApp());
