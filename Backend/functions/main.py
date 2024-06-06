@@ -30,7 +30,7 @@ def convert_to_gs_url(url):
 def image(req: https_fn.CallableRequest):
     GOOGLE_API_KEY=os.environ.get('GOOGLE_API_KEY')
     genai.configure(api_key=GOOGLE_API_KEY)
-    config = genai.GenerationConfig(max_output_tokens=1024, temperature=0.5, response_mime_type='plain/text')
+    config = genai.GenerationConfig(max_output_tokens=1024, temperature=0.6, response_mime_type='plain/text')
     model = genai.GenerativeModel('gemini-1.5-flash')
     data = req.data.get('data')
     mime_type = req.data.get('mime_type')
@@ -42,7 +42,7 @@ def image(req: https_fn.CallableRequest):
     if query:
         textPart = query
     else:
-        config = genai.GenerationConfig(max_output_tokens=1024, temperature=0.5, response_mime_type='application/json')
+        config = genai.GenerationConfig(max_output_tokens=1024, temperature=0.6, response_mime_type='application/json')
         textPart = """
         Describe the image in detail. Also provide a suitable title for the image. 
         Answer whether there is anything dangerous with a 'Yes/No' for a visually impaired person in the image. Only if 'Yes', provide the information regarding the danger.
@@ -82,7 +82,7 @@ def image(req: https_fn.CallableRequest):
 @https_fn.on_call()
 def video(req: https_fn.CallableRequest):
     vertexai.init(project='vision-crafters', location='us-central1')
-    config = vgenai.GenerationConfig(max_output_tokens=1024, temperature=0.5, response_mime_type='plain/text')
+    config = vgenai.GenerationConfig(max_output_tokens=1024, temperature=0.6, response_mime_type='plain/text')
     model = vgenai.GenerativeModel('gemini-1.5-flash')
     data = req.data.get('data')
     mime_type = req.data.get('mime_type')
@@ -93,7 +93,7 @@ def video(req: https_fn.CallableRequest):
     if query:
         textPart = query
     else:
-        config = vgenai.GenerationConfig(max_output_tokens=1024, temperature=0.5, response_mime_type='application/json')
+        config = vgenai.GenerationConfig(max_output_tokens=1024, temperature=0.6, response_mime_type='application/json')
         textPart = """
         Describe the video in detail. Also provide a suitable title for the video. 
         Answer whether there is anything dangerous with a Yes/No for a visually impaired person in the video. Only if 'Yes', provide the information regarding the danger.
