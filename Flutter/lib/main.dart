@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:modal_progress_hud_nsn/modal_progress_hud_nsn.dart';
 import 'package:flutter/foundation.dart';
 import 'firebase_options.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'upload.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_functions/cloud_functions.dart';
@@ -15,13 +16,17 @@ import 'app_state.dart'; // Import the AppState class
 import 'dart:io';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  WidgetsFlutterBinding
+      .ensureInitialized(); // Ensure Flutter Firebase is initialized
+  await dotenv.load(fileName: ".env");
+  await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform); // Initialize Firebase
 
-  if (kDebugMode) {
-    const host = '192.168.29.240';
-    FirebaseFunctions.instanceFor(region: "us-central1")
-        .useFunctionsEmulator(host, 5001);
+  // Point to local emulator during development
+  if(kDebugMode){
+    final host = dotenv.get('HOST');  // Localhost IP
+    FirebaseFunctions.instanceFor(region: "us-central1").useFunctionsEmulator(host, 5001);
+
   }
   runApp(const MyApp());
 }
