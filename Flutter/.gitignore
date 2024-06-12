@@ -44,3 +44,6 @@ app.*.map.json
 
 # Firebase configuration file
 /lib/firebase_options.dart
+
+# Dotenv file
+.env

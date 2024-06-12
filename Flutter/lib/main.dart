@@ -4,27 +4,29 @@ import 'package:flutterbasics/pages/Dashboard.dart';
 import 'package:flutterbasics/pages/Settings.dart';
 import 'package:flutterbasics/pages/Speech_To_Text.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:modal_progress_hud_nsn/modal_progress_hud_nsn.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutterbasics/firebase_options.dart';
-import 'package:flutterbasics/upload_video.dart';
-import 'package:flutterbasics/upload_image.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutterbasics/upload.dart';
+import 'package:provider/provider.dart';
+import 'package:cloud_functions/cloud_functions.dart';
+import 'app_state.dart'; // Import the AppState class
+import 'dart:io';
 import 'package:sqflite/sqflite.dart';
 import 'package:flutterbasics/services/database.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-
-  // Initialize the local database
+  await dotenv.load(fileName: ".env");
   final database = await initializeDatabase();
+  await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform); // Initialize Firebase
 
+  // Point to local emulator during development
   if (kDebugMode) {
-    // const host = '192.168.1.3';
-    const host = '192.168.46.62';
-
+    final host = dotenv.get('HOST'); // Localhost IP
     FirebaseFunctions.instanceFor(region: "us-central1")
         .useFunctionsEmulator(host, 5001);
   }
@@ -38,13 +40,16 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: "Vision Crafters",
-      theme: ThemeData.light(),
-      darkTheme: ThemeData.dark(),
-      themeMode: ThemeMode.system,
-      home: HomePage(database: database),
+    return ChangeNotifierProvider(
+      create: (_) => AppState(),
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: "Vision Crafters",
+        theme: ThemeData.light(),
+        darkTheme: ThemeData.dark(),
+        themeMode: ThemeMode.system,
+        home: HomePage(database: database),
+      ),
     );
   }
 }
@@ -59,6 +64,11 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  List<String> descriptions = [];
+  File? imageGal;
+  File? imageCam;
+  bool showSpinner = false;
+
   List<Map<String, dynamic>> messages = [];
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
@@ -95,146 +105,143 @@ class _HomePageState extends State<HomePage> {
     if (message.isNotEmpty) {
       await insertMessage(widget.database, 1, 'user', message);
       print(
-          'Message sent to database: $message'); // Print the message to the terminal
+          'Message sent to database: $message'); 
       _controller.clear();
       _loadMessages();
     }
   }
 
+  void addDescription(String description) {
+    setState(() {
+      descriptions.add(description);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    final appState = Provider.of<AppState>(context);
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Vision Crafters"),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const SettingsPage()),
-              );
-            },
-          ),
-        ],
-      ),
-      drawer: Drawer(
-        width: MediaQuery.of(context).size.width * 0.8,
-        child: DashBoardScreen(),
-      ),
-      body: Column(
-        children: [
-          const Center(
-            child: Text(
-              "Welcome to Vision Crafters",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-          ),
-          Expanded(
-            child: ListView.builder(
-              itemCount: messages.length,
-              itemBuilder: (context, index) {
-                final message = messages[index];
-                final isMe = message['role'] == 'user';
-                if (message['is_image'] == 1) {
-                  final imageProvider = AssetImage(message['content']);
-                  return ListTile(
-                    title: _buildImageBubble(imageProvider,
-                        isMe: isMe, context: context),
-                  );
-                } else {
-                  return ListTile(
-                    title: _buildMessageBubble(message['content'],
-                        isMe: isMe, context: context),
-                  );
-                }
+        appBar: AppBar(
+          title: const Text("Vision Crafters"),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.settings),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SettingsPage()),
+                );
               },
             ),
-          ),
-          Container(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              children: [
-                FloatingActionButton(
-                  shape: const CircleBorder(),
-                  heroTag: "UniqueTag2",
-                  onPressed: () {},
-                  child: SpeedDial(
-                    animatedIcon: AnimatedIcons.menu_close,
-                    direction: SpeedDialDirection.up,
-                    children: [
-                      SpeedDialChild(
-                        shape: const CircleBorder(),
-                        child: const Icon(Icons.camera),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => UploadImageScreen(
-                                addDescriptionCallback: (path) async {
-                                  await insertMessage(
-                                      widget.database, 1, 'user', path,
-                                      isImage: true);
-                                  _loadMessages();
-                                },
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                      SpeedDialChild(
-                        shape: const CircleBorder(),
-                        child: const Icon(Icons.video_call),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) =>
-                                    const UploadVideoScreen()),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
+          ],
+        ),
+        drawer: Drawer(
+          width: MediaQuery.of(context).size.width * 0.8,
+          child: DashBoardScreen(),
+        ),
+        body: ModalProgressHUD(
+          inAsyncCall: appState.showSpinner,
+          // ignore: sort_child_properties_last
+          child: Column(
+            children: [
+              const Center(
+                child: Text(
+                  "Welcome to Vision Crafters",
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                    child: TextFormField(
-                      controller: _controller,
-                      focusNode: _focusNode,
-                      decoration: InputDecoration(
-                        hintText: 'Enter your message...',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        filled: true,
-                        fillColor: const Color.fromARGB(255, 0, 0, 0),
-                        contentPadding: const EdgeInsets.symmetric(
-                            vertical: 16, horizontal: 8),
-                        hintStyle: TextStyle(color: Colors.grey[500]),
+              ),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: messages.length,
+                  itemBuilder: (context, index) {
+                    final message = messages[index];
+                    final isMe = message['role'] == 'user';
+                    if (message['is_image'] == 1) {
+                      final imageProvider = AssetImage("./assets/images/logo.jpg");
+                      return ListTile(
+                        title: _buildImageBubble(imageProvider,
+                            isMe: isMe, context: context),
+                      );
+                    } else {
+                      return ListTile(
+                        title: _buildMessageBubble(message['content'],
+                            isMe: isMe, context: context),
+                      );
+                    }
+                  },
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.all(8.0),
+                child: Row(
+                  children: [
+                    FloatingActionButton(
+                      shape: const CircleBorder(),
+                      heroTag: "UniqueTag2",
+                      onPressed: () {},
+                      child: SpeedDial(
+                        animatedIcon: AnimatedIcons.menu_close,
+                        direction: SpeedDialDirection.up,
+                        children: [
+                          SpeedDialChild(
+                            shape: const CircleBorder(),
+                            child: const Icon(Icons.camera),
+                            onTap: () =>
+                                getImageCM(context, addDescription, appState),
+                          ),
+                          SpeedDialChild(
+                            shape: const CircleBorder(),
+                            child: const Icon(Icons.video_call),
+                            onTap: () =>
+                                getVideoFile(context, addDescription, appState),
+                          ),
+                          SpeedDialChild(
+                            shape: const CircleBorder(),
+                            child: const Icon(Icons.browse_gallery_sharp),
+                            onTap: () =>
+                                pickMedia(context, addDescription, appState),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                        child: TextFormField(
+                          controller: _controller,
+                          focusNode: _focusNode,
+                          decoration: InputDecoration(
+                            hintText: 'Enter your message...',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            filled: true,
+                            fillColor: const Color.fromARGB(255, 0, 0, 0),
+                            contentPadding: const EdgeInsets.symmetric(
+                                vertical: 16, horizontal: 8),
+                            hintStyle: TextStyle(color: Colors.grey[500]),
+                          ),
+                        ),
+                      ),
+                    ),
+                    FloatingActionButton(
+                      onPressed: _isFocused
+                          ? _sendMessage
+                          : () {
+                              showDialog(
+                                context: context,
+                                builder: (context) => const Speech(),
+                              );
+                            },
+                      child: Icon(_isFocused ? Icons.send : Icons.mic),
+                    ),
+                  ],
                 ),
-                FloatingActionButton(
-                  onPressed: _isFocused
-                      ? _sendMessage
-                      : () {
-                          showDialog(
-                            context: context,
-                            builder: (context) => const Speech(),
-                          );
-                        },
-                  child: Icon(_isFocused ? Icons.send : Icons.mic),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-    );
+          // floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+        ));
   }
 }
 

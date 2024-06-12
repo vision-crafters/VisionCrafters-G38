@@ -11,7 +11,7 @@ Future<Database> initializeDatabase() async {
       // Create Images table
       await db.execute('''
         CREATE TABLE images (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          id TEXT PRIMARY KEY,
           path TEXT NOT NULL,
           mime_type TEXT NOT NULL
         )
@@ -20,7 +20,7 @@ Future<Database> initializeDatabase() async {
       // Create Videos table
       await db.execute('''
         CREATE TABLE videos (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          id TEXT PRIMARY KEY,
           path TEXT NOT NULL,
           mime_type TEXT NOT NULL
         )
@@ -30,8 +30,8 @@ Future<Database> initializeDatabase() async {
       await db.execute('''
         CREATE TABLE conversations (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
-          image_id INTEGER,
-          video_id INTEGER,
+          image_id TEXT,
+          video_id TEXT,
           timestamp DATE DEFAULT (datetime('now','localtime')),
           FOREIGN KEY(image_id) REFERENCES images(id),
           FOREIGN KEY(video_id) REFERENCES videos(id)
@@ -54,21 +54,24 @@ Future<Database> initializeDatabase() async {
   );
 }
 
-Future<void> insertImage(Database db, String path, String mimeType) async {
+Future<void> insertImage(Database db, String id, String path, String mimeType) async {
   await db.insert(
     'images',
     {
+      'id': id,
       'path': path,
       'mime_type': mimeType,
     },
     conflictAlgorithm: ConflictAlgorithm.replace,
   );
+  print('Inserted image with id: $id');
 }
 
-Future<void> insertVideo(Database db, String path, String mimeType) async {
+Future<void> insertVideo(Database db, String id, String path, String mimeType) async {
   await db.insert(
     'videos',
     {
+      'id': id,
       'path': path,
       'mime_type': mimeType,
     },
@@ -76,7 +79,7 @@ Future<void> insertVideo(Database db, String path, String mimeType) async {
   );
 }
 
-Future<int> insertConversation(Database db, int? imageId, int? videoId) async {
+Future<int> insertConversation(Database db, String imageId, String videoId) async {
   return await db.insert(
     'conversations',
     {
@@ -103,3 +106,24 @@ Future<void> insertMessage(Database db, int conversationId, String role, String 
 Future<List<Map<String, dynamic>>> getMessages(Database db) async {
   return await db.query('messages');
 }
+
+
+
+Future<void> truncateImagesTable(Database db) async {
+  await db.transaction((txn) async {
+    await txn.execute('DROP TABLE IF EXISTS images');
+    await txn.execute('''
+      CREATE TABLE images (
+        id TEXT PRIMARY KEY,
+        path TEXT NOT NULL,
+        mime_type TEXT NOT NULL
+      )
+    ''');
+  });
+}
+
+Future<void> insertImageWithTruncate(Database db, String id, String path, String mimeType) async {
+  await truncateImagesTable(db);
+  await insertImage(db, id, path, mimeType);
+}
+
