@@ -4,12 +4,16 @@ import 'package:flutterbasics/DashBoardScreen.dart';
 import 'package:flutterbasics/Settings.dart';
 import 'package:flutterbasics/Speech_To_Text.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:modal_progress_hud_nsn/modal_progress_hud_nsn.dart';
 import 'package:flutter/foundation.dart';
 import 'firebase_options.dart';
-import 'package:flutterbasics/upload_video.dart';
-import 'upload_image.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'upload.dart';
+import 'package:provider/provider.dart';
+import 'package:cloud_functions/cloud_functions.dart';
+import 'app_state.dart'; // Import the AppState class
+import 'dart:io';
 
 void main() async {
   WidgetsFlutterBinding
@@ -22,6 +26,7 @@ void main() async {
   if(kDebugMode){
     final host = dotenv.get('HOST');  // Localhost IP
     FirebaseFunctions.instanceFor(region: "us-central1").useFunctionsEmulator(host, 5001);
+
   }
   runApp(const MyApp());
 }
@@ -31,13 +36,16 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: "Vision Crafters",
-      theme: ThemeData.light(),
-      darkTheme: ThemeData.dark(),
-      themeMode: ThemeMode.system,
-      home: const HomePage(),
+    return ChangeNotifierProvider(
+      create: (_) => AppState(),
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: "Vision Crafters",
+        theme: ThemeData.light(),
+        darkTheme: ThemeData.dark(),
+        themeMode: ThemeMode.system,
+        home: const HomePage(),
+      ),
     );
   }
 }
@@ -51,6 +59,11 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   List<String> descriptions = [];
+  File? imageGal;
+  File? imageCam;
+  final ImagePicker _pickerGal = ImagePicker();
+  final ImagePicker _pickerCam = ImagePicker();
+  bool showSpinner = false;
 
   void addDescription(String description) {
     setState(() {
@@ -60,16 +73,13 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final appState = Provider.of<AppState>(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          "Vision Crafters",
-        ),
+        title: const Text("Vision Crafters"),
         actions: [
           IconButton(
-            icon: const Icon(
-              Icons.settings,
-            ),
+            icon: const Icon(Icons.settings),
             onPressed: () {
               Navigator.push(
                 context,
@@ -83,105 +93,92 @@ class _HomePageState extends State<HomePage> {
         width: MediaQuery.of(context).size.width * 0.8,
         child: DashBoardScreen(),
       ),
-      body: Column(
-        children: [
-          const Center(
-            child: Text(
-              "Welcome to Vision Crafters",
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+      body: ModalProgressHUD(
+        inAsyncCall: appState.showSpinner,
+        child: Column(
+          children: [
+            const Center(
+              child: Text(
+                "Welcome to Vision Crafters",
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
             ),
-          ),
-          Expanded(
-            child: ListView.builder(
-              itemCount: descriptions.length,
-              itemBuilder: (context, index) {
-                return ListTile(
-                  title: Text(descriptions[index]),
-                );
-              },
+            Expanded(
+              child: ListView.builder(
+                itemCount: descriptions.length,
+                itemBuilder: (context, index) {
+                  return ListTile(
+                    title: Text(descriptions[index]),
+                  );
+                },
+              ),
             ),
-          ),
-          Container(
-            color: Colors.black,
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              children: [
-                FloatingActionButton(
-                  shape: const CircleBorder(),
-                  heroTag: "UniqueTag2",
-                  onPressed: () {},
-                  child: SpeedDial(
-                    animatedIcon: AnimatedIcons.menu_close,
-                    direction: SpeedDialDirection.up,
-                    children: [
-                      SpeedDialChild(
-                        shape: const CircleBorder(),
-                        child: const Icon(Icons.camera),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => UploadImageScreen(
-                                addDescriptionCallback: addDescription,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                      SpeedDialChild(
-                        shape: const CircleBorder(),
-                        child: const Icon(Icons.video_call),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) =>
-                                    const UploadVideoScreen()),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                    child: TextFormField(
-                      decoration: InputDecoration(
-                        hintText: 'Enter your message...',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
+            Container(
+              padding: const EdgeInsets.all(8.0),
+              child: Row(
+                children: [
+                  FloatingActionButton(
+                    shape: const CircleBorder(),
+                    heroTag: "UniqueTag2",
+                    onPressed: () {},
+                    child: SpeedDial(
+                      animatedIcon: AnimatedIcons.menu_close,
+                      direction: SpeedDialDirection.up,
+                      children: [
+                        SpeedDialChild(
+                          shape: const CircleBorder(),
+                          child: const Icon(Icons.camera),
+                          onTap: () =>
+                              getImageCM(context, addDescription, appState),
                         ),
-                        filled: true,
-                        fillColor: const Color.fromARGB(255, 0, 0, 0),
-                        contentPadding: const EdgeInsets.symmetric(
-                            vertical: 16, horizontal: 8),
-                        hintStyle: TextStyle(color: Colors.grey[500]),
+                        SpeedDialChild(
+                          shape: const CircleBorder(),
+                          child: const Icon(Icons.video_call),
+                          onTap: () =>
+                              getVideoFile(context, addDescription, appState),
+                        ),
+                        SpeedDialChild(
+                          shape: const CircleBorder(),
+                          child: const Icon(Icons.browse_gallery_sharp),
+                          onTap: () =>
+                              pickMedia(context, addDescription, appState),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                      child: TextFormField(
+                        decoration: InputDecoration(
+                          hintText: 'Enter your message...',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          filled: true,
+                          contentPadding: const EdgeInsets.symmetric(
+                              vertical: 16, horizontal: 8),
+                          hintStyle: TextStyle(color: Colors.grey[500]),
+                        ),
                       ),
                     ),
                   ),
-                ),
-                FloatingActionButton(
-                  onPressed: () {
-                    showDialog(
-                      context: context,
-                      builder: (context) => const Speech(),
-                    );
-                  },
-                  child: const Icon(Icons.mic),
-                ),
-              ],
+                  FloatingActionButton(
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => const Speech(),
+                      );
+                    },
+                    child: const Icon(Icons.mic),
+                  ),
+                ],
+              ),
             ),
-          ),
-
-          // ),
-        ],
+          ],
+        ),
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
-    floatingActionButtonLocation:
-    FloatingActionButtonLocation.centerDocked;
   }
 }
