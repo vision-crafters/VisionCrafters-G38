@@ -8,11 +8,14 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:flutterbasics/DashBoardScreen.dart';
 import 'package:flutterbasics/Settings.dart';
+import 'package:flutterbasics/Speech_To_Text.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:modal_progress_hud_nsn/modal_progress_hud_nsn.dart';
 import 'package:provider/provider.dart';
 
+import 'app_state.dart'; // Import the AppState class
 import 'firebase_options.dart';
+import 'upload.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -73,12 +76,6 @@ class _HomePageState extends State<HomePage> {
     return GestureDetector(
       onDoubleTap: () {
         getImageCM(context, addDescription, appState);
-      },
-      onLongPress: () {
-        showDialog(
-          context: context,
-          builder: (context) => const Speech(),
-        );
       },
       child: Scaffold(
         appBar: AppBar(
@@ -186,49 +183,6 @@ class _HomePageState extends State<HomePage> {
         ),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       ),
-    );
-  }
-}
-
-void getImageCM(BuildContext context, Function(String) addDescription, AppState appState) {
-  // Implement your logic for capturing image from camera
-}
-
-void getVideoFile(BuildContext context, Function(String) addDescription, AppState appState) {
-  // Implement your logic for picking video file
-}
-
-void pickMedia(BuildContext context, Function(String) addDescription, AppState appState) {
-  // Implement your logic for picking media from gallery
-}
-
-class AppState extends ChangeNotifier {
-  bool _showSpinner = false;
-
-  bool get showSpinner => _showSpinner;
-
-  set showSpinner(bool value) {
-    _showSpinner = value;
-    notifyListeners();
-  }
-}
-
-class Speech extends StatelessWidget {
-  const Speech({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text("Speech Dialog"),
-      content: Text("Implement your speech recognition or text-to-speech logic here."),
-      actions: [
-        TextButton(
-          onPressed: () {
-            Navigator.pop(context);
-          },
-          child: Text("Close"),
-        ),
-      ],
     );
   }
 }
