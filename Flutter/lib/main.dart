@@ -227,14 +227,14 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ], //end of children
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      ),
       //This places the FAB at the center of the bottom of the screen, docked 
       //within the BottomAppBar.
-    ));
+      ),
+    );
   }
 }
