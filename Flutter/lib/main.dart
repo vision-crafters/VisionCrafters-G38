@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
@@ -11,15 +10,15 @@ import 'package:flutterbasics/Settings.dart';
 import 'package:flutterbasics/Speech_To_Text.dart';
 import 'package:modal_progress_hud_nsn/modal_progress_hud_nsn.dart';
 import 'package:provider/provider.dart';
-
 import 'app_state.dart'; // Import the AppState class
 import 'firebase_options.dart';
 import 'upload.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  WidgetsFlutterBinding
+      .ensureInitialized(); // Ensure Flutter Firebase is initialized
   await dotenv.load(fileName: ".env");
-  //Ensures that Flutter has been fully initialized before running the app.
+  //Ensures that Firebase has been fully initialized before running the app.
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   if (kDebugMode) {
@@ -33,7 +32,7 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -90,6 +89,12 @@ class _HomePageState extends State<HomePage> {
       onDoubleTap: () {
         getImageCM(context, addDescription, appState);
       },//Double tap gesture to open the camera
+      onLongPress: () {
+        showDialog(
+          context: context,
+          builder: (context) => const Speech(),
+        );
+      },    
       child: Scaffold(
         appBar: AppBar(
           //Displays the title and a settings button.
@@ -201,10 +206,6 @@ class _HomePageState extends State<HomePage> {
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            filled: true,
-                            contentPadding: const EdgeInsets.symmetric(
-                                vertical: 16, horizontal: 8),
-                            hintStyle: TextStyle(color: Colors.grey[500]),
                           ),
                         ),
                       ),
@@ -226,14 +227,14 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ], //end of children
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       ),
       //This places the FAB at the center of the bottom of the screen, docked 
       //within the BottomAppBar.
-    );
+    ));
   }
 }
