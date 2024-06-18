@@ -27,7 +27,7 @@ void main() async {
     //the app is running in debug mode.
     final host = dotenv.get('HOST');
     FirebaseFunctions.instanceFor(region: "us-central1")
-        .useFunctionsEmulator(host, 5001);
+        .useFunctionsEmulator(host, 5001);//Uses the local emulator
   }
   runApp(const MyApp()); //Launches the root widget of the application
 }
@@ -62,7 +62,7 @@ class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key); //constructor for the HomePage widget
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  State<HomePage> createState() => _HomePageState();//Creates the state of the widget
 }
 
 class _HomePageState extends State<HomePage> {
@@ -89,7 +89,7 @@ class _HomePageState extends State<HomePage> {
     return GestureDetector(
       onDoubleTap: () {
         getImageCM(context, addDescription, appState);
-      },
+      },//Double tap gesture to open the camera
       child: Scaffold(
         appBar: AppBar(
           //Displays the title and a settings button.
@@ -97,10 +97,10 @@ class _HomePageState extends State<HomePage> {
           actions: [
             IconButton(
               icon: const Icon(Icons.settings),
-              onPressed: () {
+              onPressed: () {//Function to be executed when the settings button is pressed
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const SettingsPage()),
+                  MaterialPageRoute(builder: (context) => const SettingsPage()),//Navigates to the settings page
                 );
               },
             ),
@@ -109,7 +109,7 @@ class _HomePageState extends State<HomePage> {
         drawer: Drawer(
           //Provides a navigation drawer
         width: MediaQuery.of(context).size.width * 0.8,
-          child: DashBoardScreen(),
+          child: DashBoardScreen(),//Displays the dashboard screen
         ),
         body: ModalProgressHUD(
           //Displays a loading spinner when appState.showSpinner is true
