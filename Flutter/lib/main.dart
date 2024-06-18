@@ -18,20 +18,23 @@ import 'firebase_options.dart';
 import 'upload.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  WidgetsFlutterBinding
+      .ensureInitialized(); // Ensure Flutter Firebase is initialized
   await dotenv.load(fileName: ".env");
   await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform);
+      options: DefaultFirebaseOptions.currentPlatform); // Initialize Firebase
 
-  if(kDebugMode){
-    final host = dotenv.get('HOST'); 
-    FirebaseFunctions.instanceFor(region: "us-central1").useFunctionsEmulator(host, 5001);
+  // Point to local emulator during development
+  if (kDebugMode) {
+    final host = dotenv.get('HOST'); // Localhost IP
+    FirebaseFunctions.instanceFor(region: "us-central1")
+        .useFunctionsEmulator(host, 5001);
   }
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -50,7 +53,7 @@ class MyApp extends StatelessWidget {
 }
 
 class HomePage extends StatefulWidget {
-  const HomePage({Key? key}) : super(key: key);
+  const HomePage({super.key});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -74,115 +77,122 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
     return GestureDetector(
-      onDoubleTap: () {
-        getImageCM(context, addDescription, appState);
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text("Vision Crafters"),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.settings),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const SettingsPage()),
-                );
-              },
-            ),
-          ],
-        ),
-        drawer: Drawer(
-          width: MediaQuery.of(context).size.width * 0.8,
-          child: DashBoardScreen(),
-        ),
-        body: ModalProgressHUD(
-          inAsyncCall: appState.showSpinner,
-          child: Column(
-            children: [
-              const Center(
-                child: Text(
-                  "Welcome to Vision Crafters",
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-              ),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: descriptions.length,
-                  itemBuilder: (context, index) {
-                    return ListTile(
-                      title: Text(descriptions[index]),
-                    );
-                  },
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.all(8.0),
-                child: Row(
-                  children: [
-                    FloatingActionButton(
-                      shape: const CircleBorder(),
-                      heroTag: "UniqueTag2",
-                      onPressed: () {},
-                      child: SpeedDial(
-                        animatedIcon: AnimatedIcons.menu_close,
-                        direction: SpeedDialDirection.up,
-                        children: [
-                          SpeedDialChild(
-                            shape: const CircleBorder(),
-                            child: const Icon(Icons.camera),
-                            onTap: () =>
-                                getImageCM(context, addDescription, appState),
-                          ),
-                          SpeedDialChild(
-                            shape: const CircleBorder(),
-                            child: const Icon(Icons.video_call),
-                            onTap: () =>
-                                getVideoFile(context, addDescription, appState),
-                          ),
-                          SpeedDialChild(
-                            shape: const CircleBorder(),
-                            child: const Icon(Icons.browse_gallery_sharp),
-                            onTap: () =>
-                                pickMedia(context, addDescription, appState),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                        child: TextFormField(
-                          decoration: InputDecoration(
-                            hintText: 'Enter your message...',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            filled: true,
-                            contentPadding: const EdgeInsets.symmetric(
-                                vertical: 16, horizontal: 8),
-                            hintStyle: TextStyle(color: Colors.grey[500]),
-                          ),
-                        ),
-                      ),
-                    ),
-                    FloatingActionButton(
-                      onPressed: () {
-                        showDialog(
-                          context: context,
-                          builder: (context) => const Speech(),
-                        );
-                      },
-                      child: const Icon(Icons.mic),
-                    ),
-                  ],
-                ),
+        onDoubleTap: () {
+          getImageCM(context, addDescription, appState);
+        },
+        onLongPress: () {
+          showDialog(
+            context: context,
+            builder: (context) => const Speech(),
+          );
+        },
+        child: Scaffold(
+          appBar: AppBar(
+            title: const Text("Vision Crafters"),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.settings),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const SettingsPage()),
+                  );
+                },
               ),
             ],
           ),
-        ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      ),
-    );
+          drawer: Drawer(
+            width: MediaQuery.of(context).size.width * 0.8,
+            child: DashBoardScreen(),
+          ),
+          body: ModalProgressHUD(
+            inAsyncCall: appState.showSpinner,
+            child: Column(
+              children: [
+                const Center(
+                  child: Text(
+                    "Welcome to Vision Crafters",
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: descriptions.length,
+                    itemBuilder: (context, index) {
+                      return ListTile(
+                        title: Text(descriptions[index]),
+                      );
+                    },
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Row(
+                    children: [
+                      FloatingActionButton(
+                        shape: const CircleBorder(),
+                        heroTag: "UniqueTag2",
+                        onPressed: () {},
+                        child: SpeedDial(
+                          animatedIcon: AnimatedIcons.menu_close,
+                          direction: SpeedDialDirection.up,
+                          children: [
+                            SpeedDialChild(
+                              shape: const CircleBorder(),
+                              child: const Icon(Icons.camera),
+                              onTap: () =>
+                                  getImageCM(context, addDescription, appState),
+                            ),
+                            SpeedDialChild(
+                              shape: const CircleBorder(),
+                              child: const Icon(Icons.video_call),
+                              onTap: () => getVideoFile(
+                                  context, addDescription, appState),
+                            ),
+                            SpeedDialChild(
+                              shape: const CircleBorder(),
+                              child: const Icon(Icons.browse_gallery_sharp),
+                              onTap: () =>
+                                  pickMedia(context, addDescription, appState),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                          child: TextFormField(
+                            decoration: InputDecoration(
+                              hintText: 'Enter your message...',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              filled: true,
+                              contentPadding: const EdgeInsets.symmetric(
+                                  vertical: 16, horizontal: 8),
+                              hintStyle: TextStyle(color: Colors.grey[500]),
+                            ),
+                          ),
+                        ),
+                      ),
+                      FloatingActionButton(
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) => const Speech(),
+                          );
+                        },
+                        child: const Icon(Icons.mic),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          floatingActionButtonLocation:
+              FloatingActionButtonLocation.centerDocked,
+        ));
   }
 }
