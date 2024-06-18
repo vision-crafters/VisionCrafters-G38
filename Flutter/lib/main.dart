@@ -1,27 +1,31 @@
+import 'dart:io';
+
+import 'package:cloud_functions/cloud_functions.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:flutterbasics/DashBoardScreen.dart';
 import 'package:flutterbasics/Settings.dart';
 import 'package:flutterbasics/Speech_To_Text.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:modal_progress_hud_nsn/modal_progress_hud_nsn.dart';
-import 'package:flutter/foundation.dart';
+import 'package:provider/provider.dart';
+
+import 'app_state.dart'; // Import the AppState class
 import 'firebase_options.dart';
 import 'upload.dart';
-import 'package:provider/provider.dart';
-import 'package:cloud_functions/cloud_functions.dart';
-import 'app_state.dart'; // Import the AppState class
-import 'dart:io';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
   //Ensures that Flutter has been fully initialized before running the app.
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  //Initializes Firebase with the provided options
+
   if (kDebugMode) {
     //Configures Firebase Functions to use a local emulator if
     //the app is running in debug mode.
-    const host = '192.168.240.168';
+    final host = dotenv.get('HOST');
     FirebaseFunctions.instanceFor(region: "us-central1")
         .useFunctionsEmulator(host, 5001);
   }
@@ -29,7 +33,7 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -55,7 +59,7 @@ class MyApp extends StatelessWidget {
 class HomePage extends StatefulWidget {
   //A stateful widget that maintains the state of the home page.
 
-  const HomePage({super.key}); //constructor for the HomePage widget
+  const HomePage({Key? key}) : super(key: key); //constructor for the HomePage widget
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -82,147 +86,152 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     //Builds the UI of the home page
     final appState = Provider.of<AppState>(context);
-    return Scaffold(
-      appBar: AppBar(
-        //Displays the title and a settings button.
+    return GestureDetector(
+      onDoubleTap: () {
+        getImageCM(context, addDescription, appState);
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          //Displays the title and a settings button.
         title: const Text("Vision Crafters"),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const SettingsPage()),
-              );
-            },
-          ),
-        ],
-      ),
-      drawer: Drawer(
-        //Provides a navigation drawer
-        width: MediaQuery.of(context).size.width * 0.8,
-        child: DashBoardScreen(),
-      ),
-      body: ModalProgressHUD(
-        //Displays a loading spinner when appState.showSpinner is true
-        inAsyncCall: appState.showSpinner,
-        child: Column(
-          children: [
-            //Displays the UI of the home page
-            const Center(
-              child: Text(
-                "Welcome to Vision Crafters",
-                //Displays a welcome message.
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-            ),
-            Expanded(
-              child: ListView.builder(
-                //Displays the list of descriptions using ListView.builder
-                itemCount: descriptions.length, // Number of items in the list
-                itemBuilder: (context, index) {
-                  // Builds each item in the list
-                  return ListTile(
-                    // Displays each item in the list as a ListTile
-                    title: Text(descriptions[index]),
-                  );
-                },
-              ),
-            ),
-            Container(
-              // Displays a floating action button
-              padding: const EdgeInsets.all(8.0), // Padding around the button
-              child: Row(
-                //Contains a speed dial for image/video picking,a text
-                //input field, and a microphone button for speech-to-text
-                children: [
-                  FloatingActionButton(
-                    //Displays a speed dial for image/video picking
-                    shape: const CircleBorder(),
-                    heroTag: "UniqueTag2", //Unique identifier for the button
-                    onPressed: () {},
-                    child: SpeedDial(
-                      //Speed dial for image/video picking
-                      animatedIcon: AnimatedIcons
-                          .menu_close, //Animated icon for the button
-                      direction:
-                          SpeedDialDirection.up, //Direction of the speed dial
-                      children: [
-                        //List of children for the speed dial
-                        SpeedDialChild(
-                          //Child for the camera button
-                          shape: const CircleBorder(), //Shape of the button
-                          child: const Icon(Icons.camera), //Icon for the button
-                          onTap: () =>
-                              getImageCM(context, addDescription, appState),
-                          //Function to be executed when the button is pressed
-                          //Calls the getImageCM function with the context,
-                          //addDescription, and appState as parameters
-                        ),
-                        SpeedDialChild(
-                          //Child for the video button
-                          shape: const CircleBorder(),
-                          child: const Icon(Icons.video_call),
-                          onTap: () =>
-                              getVideoFile(context, addDescription, appState),
-                          // Function to be executed when the button is pressed
-                          //Calls the getVideoFile function with the context,
-                          //addDescription, and appState as parameters
-                        ),
-                        SpeedDialChild(
-                          //Child for the gallery button
-                          shape: const CircleBorder(),
-                          child: const Icon(Icons.browse_gallery_sharp),
-                          onTap: () =>
-                              pickMedia(context, addDescription, appState),
-                          //Function to be executed when the button is pressed
-                          //Calls the pickMedia function with the context,
-                          //addDescription, and appState as parameters
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    //Expanded widget to expand the text input field
-                    child: Padding(
-                      //Padding widget to add padding to the text input field
-                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                      child: TextFormField(
-                        decoration: InputDecoration(
-                          hintText: 'Enter your message...',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          filled: true,
-                          contentPadding: const EdgeInsets.symmetric(
-                              vertical: 16, horizontal: 8),
-                          hintStyle: TextStyle(color: Colors.grey[500]),
-                        ),
-                      ),
-                    ),
-                  ),
-                  FloatingActionButton(
-                    //Displays a microphone button for speech-to-text
-                    onPressed: () {
-                      //Function to be executed when the button is pressed
-                      showDialog(
-                        //Displays a dialog box for speech-to-text
-                        context: context, //Context for the dialog box
-                        builder: (context) =>
-                            const Speech(), //Speech dialog box
-                        // will be opened up when the microphone button is pressed
-                      );
-                    },
-                    child:
-                        const Icon(Icons.mic), // Icon for the microphone button
-                  ),
-                ], //end of children
-              ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.settings),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SettingsPage()),
+                );
+              },
             ),
           ],
         ),
+        drawer: Drawer(
+          //Provides a navigation drawer
+        width: MediaQuery.of(context).size.width * 0.8,
+          child: DashBoardScreen(),
+        ),
+        body: ModalProgressHUD(
+          //Displays a loading spinner when appState.showSpinner is true
+        inAsyncCall: appState.showSpinner,
+          child: Column(
+            children: [
+              //Displays the UI of the home page
+            const Center(
+                child: Text(
+                  "Welcome to Vision Crafters",
+                  //Displays a welcome message.
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+              ),
+              Expanded(
+                child: ListView.builder(
+                  //Displays the list of descriptions using ListView.builder
+                itemCount: descriptions.length, // Number of items in the list
+                  itemBuilder: (context, index) {
+                    // Builds each item in the list
+                  return ListTile(
+                      // Displays each item in the list as a ListTile
+                    title: Text(descriptions[index]),
+                    );
+                  },
+                ),
+              ),
+              Container(
+                // Displays a floating action button
+              padding: const EdgeInsets.all(8.0), // Padding around the button
+                child: Row(
+                  //Contains a speed dial for image/video picking,a text
+                //input field, and a microphone button for speech-to-text
+                children: [
+                    FloatingActionButton(
+                      //Displays a speed dial for image/video picking
+                    shape: const CircleBorder(),
+                      heroTag: "UniqueTag2", //Unique identifier for the button
+                      onPressed: () {},
+                      child: SpeedDial(
+                        //Speed dial for image/video picking
+                      animatedIcon: AnimatedIcons
+                          .menu_close, //Animated icon for the button
+                        direction:
+                          SpeedDialDirection.up, //Direction of the speed dial
+                        children: [
+                          //List of children for the speed dial
+                        SpeedDialChild(
+                            //Child for the camera button
+                          shape: const CircleBorder(), //Shape of the button
+                            child: const Icon(Icons.camera), //Icon for the button
+                            onTap: () =>
+                                getImageCM(context, addDescription, appState),
+                            //Function to be executed when the button is pressed
+                          //Calls the getImageCM function with the context,
+                          //addDescription, and appState as parameters
+                        ),
+                          SpeedDialChild(
+                            //Child for the video button
+                          shape: const CircleBorder(),
+                            child: const Icon(Icons.video_call),
+                            onTap: () =>
+                                getVideoFile(context, addDescription, appState),
+                            // Function to be executed when the button is pressed
+                          //Calls the getVideoFile function with the context,
+                          //addDescription, and appState as parameters
+                        ),
+                          SpeedDialChild(
+                            //Child for the gallery button
+                          shape: const CircleBorder(),
+                            child: const Icon(Icons.browse_gallery_sharp),
+                            onTap: () =>
+                                pickMedia(context, addDescription, appState),
+                            //Function to be executed when the button is pressed
+                          //Calls the pickMedia function with the context,
+                          //addDescription, and appState as parameters
+                        ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      //Expanded widget to expand the text input field
+                    child: Padding(
+                        //Padding widget to add padding to the text input field
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                        child: TextFormField(
+                          decoration: InputDecoration(
+                            hintText: 'Enter your message...',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            filled: true,
+                            contentPadding: const EdgeInsets.symmetric(
+                                vertical: 16, horizontal: 8),
+                            hintStyle: TextStyle(color: Colors.grey[500]),
+                          ),
+                        ),
+                      ),
+                    ),
+                    FloatingActionButton(
+                      //Displays a microphone button for speech-to-text
+                    onPressed: () {
+                        //Function to be executed when the button is pressed
+                      showDialog(
+                          //Displays a dialog box for speech-to-text
+                        context: context, //Context for the dialog box
+                          builder: (context) =>
+                            const Speech(), //Speech dialog box
+                        // will be opened up when the microphone button is pressed
+                        );
+                      },
+                      child:
+                        const Icon(Icons.mic), // Icon for the microphone button
+                    ),
+                  ], //end of children
+                ),
+              ),
+            ],
+          ),
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       //This places the FAB at the center of the bottom of the screen, docked 
       //within the BottomAppBar.
     );
