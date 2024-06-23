@@ -1,22 +1,51 @@
-Project Overview
+# Visual Aid for Visually Impaired
 
-This project aims to develop a mobile application that leverages Vision-Language Models (VLM) to assist individuals with visual impairments. The application captures images or videos, processes them to generate textual descriptions of the surroundings, and assists users by answering their queries related to the environment. Additionally, it can raise alarms in hazardous situations and maintain a log of interactions for caregivers to review.
+## Project Overview
+**Visual Aid for Visually Impaired** is an innovative mobile application designed to assist visually impaired individuals by converting images or videos into descriptive text. The app leverages Visual Language Models (VLM) to analyze the surroundings and provide detailed descriptions. This tool not only helps users understand their environment but also keeps a record of activities for caregivers to review if necessary.
 
-Key Features
+## Team Name
+**Vision Crafters**
 
-1. **Scene Description**: The app captures images or videos and converts them to text, describing colors and objects in the scene to users who are partially blind.
-2. **Hazard Detection**: The app analyzes the surroundings and raises alarms in case of hazardous situations.
-3. **Conversational Assistance**: Users can interact with a conversational bot that provides detailed descriptions of their surroundings and answers related queries.
-4. **Interaction Logging**: The app maintains a log of all conversations and activities for caregivers to review the history of the user's surroundings.
+## Features
+1. **Scene-to-Text Conversion**: The app captures pictures or videos and processes them using VLM to describe the surroundings.
+2. **User Assistance**: After processing, the app answers user queries related to their environment.
+3. **Hazard Detection**: The app raises alarms in case of hazardous surroundings.
+4. **Conversation Log**: The app maintains a log of interactions with the user for future reference.
 
-Functional Requirements
+## Basic Workflow
 
-1. **Image/Video Capture**: The mobile app should be able to capture pictures or videos.
-2. **VLM Processing**: Utilize pre-trained Vision-Language Models to process the captured media and generate textual descriptions.
-3. **User Queries**: Assist users by answering their questions about the surroundings based on the processed descriptions.
-4. **Alarm System**: Automatically raise an alarm if hazardous surroundings are detected.
-5. **Conversation Log**: Keep a detailed log of all interactions and activities for future reference by caregivers.
+1. **Capture Image/Video**:
+    - The user opens the app and uses the mobile device's camera to capture a picture or video of their surroundings.
+  
+2. **Process Input**:
+    - The captured media is processed using VLM to generate a descriptive text of the scene.
 
-This project aims to significantly enhance the independence and safety of visually impaired individuals by providing real-time, detailed descriptions of their environment and alerting them to potential dangers.
+3. **Describe Surroundings**:
+    - The app provides an auditory(scene to text) description of the surroundings, detailing colors, objects, and other relevant features.
+
+4. **Query Assistance**:
+    - The user can ask questions about their environment, and the app will respond with relevant information based on the processed data.
+
+5. **Hazard Detection**:
+    - If the app detects any hazardous elements in the surroundings, it will immediately raise an alarm to alert the user.
+
+6. **Log Conversations**:
+    - All interactions and descriptions are logged for future reference, which can be reviewed by caregivers if needed.
+
+## Usage Scenarios
+1. **Describing Colors/Objects**:
+    - The app can describe the colors and objects in a scene to a person who is partially blind, helping them to better understand their surroundings.
+
+2. **Raising Alarms**:
+    - In case of hazardous surroundings, the app will raise an alarm to ensure the user is aware of potential dangers.
+
+3. **Conversational Bot**:
+    - The app can act as a conversational bot, describing the surroundings and answering questions to assist a visually impaired person in navigating their environment safely.
+
+## Requirements
+1. A mobile device with camera capabilities.
+2. Pre-trained Visual Language Models (VLM) for scene-to-text conversion.
+3. Internet connectivity for processing and updates.
+4. Secure storage for maintaining conversation logs.
 
 
