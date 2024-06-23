@@ -1,4 +1,4 @@
-# Visual Aid for Visually Impaired
+# Visual Aid for Visually Impaired-G38-PS24
 
 ## Project Overview
 **Visual Aid for Visually Impaired** is an innovative mobile application designed to assist visually impaired individuals by converting images or videos into descriptive text. The app leverages Visual Language Models (VLM) to analyze the surroundings and provide detailed descriptions. This tool not only helps users understand their environment but also keeps a record of activities for caregivers to review if necessary.
