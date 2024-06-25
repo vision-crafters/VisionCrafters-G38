@@ -1,129 +1,136 @@
-import 'package:sqflite/sqflite.dart';
+import 'dart:io';
+
 import 'package:path/path.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:sqflite/sqflite.dart';
 
-Future<Database> initializeDatabase() async {
-  final databasePath = await getDatabasesPath();
-  final path = join(databasePath, 'app.db');
+class DatabaseHelper {
+  static Database? _database;
+  static const String dbName = 'vlm_database.db';
 
-  return openDatabase(
-    path,
-    onCreate: (db, version) async {
-      // Create Images table
-      await db.execute('''
-        CREATE TABLE images (
-          id TEXT PRIMARY KEY,
-          path TEXT NOT NULL,
-          mime_type TEXT NOT NULL
-        )
-      ''');
+  // Singleton instance
+  static final DatabaseHelper instance = DatabaseHelper._privateConstructor();
 
-      // Create Videos table
-      await db.execute('''
-        CREATE TABLE videos (
-          id TEXT PRIMARY KEY,
-          path TEXT NOT NULL,
-          mime_type TEXT NOT NULL
-        )
-      ''');
+  DatabaseHelper._privateConstructor();
 
-      // Create Conversations table
-      await db.execute('''
-        CREATE TABLE conversations (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          image_id TEXT,
-          video_id TEXT,
-          timestamp DATE DEFAULT (datetime('now','localtime')),
-          FOREIGN KEY(image_id) REFERENCES images(id),
-          FOREIGN KEY(video_id) REFERENCES videos(id)
-        )
-      ''');
+  Future<Database> get database async {
+    if (_database != null) return _database!;
 
-      // Create Messages table
-      await db.execute('''
-        CREATE TABLE messages (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          conversation_id INTEGER NOT NULL,
-          role TEXT NOT NULL,
-          content TEXT NOT NULL,
-          is_image INTEGER NOT NULL DEFAULT 0,
-          FOREIGN KEY(conversation_id) REFERENCES conversations(id)
-        )
-      ''');
-    },
-    version: 1,
-  );
-}
+    _database = await _initDatabase();
+    return _database!;
+  }
 
-Future<void> insertImage(Database db, String id, String path, String mimeType) async {
-  await db.insert(
-    'images',
-    {
-      'id': id,
-      'path': path,
-      'mime_type': mimeType,
-    },
-    conflictAlgorithm: ConflictAlgorithm.replace,
-  );
-  print('Inserted image with id: $id');
-}
+  Future<Database> _initDatabase() async {
+    String path = join(await getDatabasesPath(), dbName);
+    return await openDatabase(path, version: 1, onCreate: _createDatabase);
+  }
 
-Future<void> insertVideo(Database db, String id, String path, String mimeType) async {
-  await db.insert(
-    'videos',
-    {
-      'id': id,
-      'path': path,
-      'mime_type': mimeType,
-    },
-    conflictAlgorithm: ConflictAlgorithm.replace,
-  );
-}
+  Future<void> _createDatabase(Database db, int version) async {
+    // Create tables
+    await db.execute('''
+      CREATE TABLE Conversations (
+        conversation_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT,
+        timestamp DATE DEFAULT (datetime('now','localtime'))
+      )
+    ''');
 
-Future<int> insertConversation(Database db, String imageId, String videoId) async {
-  return await db.insert(
-    'conversations',
-    {
-      'image_id': imageId,
-      'video_id': videoId,
-    },
-    conflictAlgorithm: ConflictAlgorithm.replace,
-  );
-}
+    await db.execute('''
+      CREATE TABLE Messages (
+        message_id INTEGER PRIMARY KEY,
+        conversation_id INTEGER,
+        role TEXT,
+        content TEXT,
+        timestamp DATE DEFAULT (datetime('now','localtime')),
+        FOREIGN KEY (conversation_id) REFERENCES Conversations(conversation_id)
+      )
+    ''');
 
-Future<void> insertMessage(Database db, int conversationId, String role, String content, {bool isImage = false}) async {
-  await db.insert(
-    'messages',
-    {
+    await db.execute('''
+      CREATE TABLE Media (
+        media_id INTEGER PRIMARY KEY,
+        conversation_id INTEGER,
+        mime_type TEXT,
+        path TEXT,
+        timestamp DATE DEFAULT (datetime('now','localtime')),
+        FOREIGN KEY (conversation_id) REFERENCES Conversations(conversation_id)
+      )
+    ''');
+  }
+
+  Future<List<Map<String, dynamic>>> getAllConversations() async {
+    Database db = await instance.database;
+    return await db.query('Conversations', orderBy: 'timestamp DESC');
+  }
+
+  Future<List<Map<String, dynamic>>> getConversationData(
+      int conversationId) async {
+    Database db = await instance.database;
+
+    // SQL query to join Messages and Media tables and order by timestamp
+    String query = '''
+    SELECT 
+      message_id as id, conversation_id, role, content, NULL as mime_type, NULL as path, timestamp, 'message' as type 
+    FROM Messages 
+    WHERE conversation_id = ? 
+    UNION
+    SELECT 
+      media_id as id, conversation_id, NULL as role, NULL as content, mime_type, path, timestamp, 'media' as type 
+    FROM Media 
+    WHERE conversation_id = ? 
+    ORDER BY timestamp ASC
+  ''';
+
+    List<Map<String, dynamic>> result =
+        await db.rawQuery(query, [conversationId, conversationId]);
+    return result;
+  }
+
+  Future<List<Map<String, dynamic>>> getMessages(int conversationId) async {
+    List<Map<String, dynamic>> data = await getConversationData(conversationId);
+    List<Map<String, dynamic>> messages = data.where((element) => element['type'] == 'message').toList();
+    return messages;
+  }
+
+  Future<int> insertConversation(String title) async {
+    Database db = await instance.database;
+    return await db.insert('Conversations', {'title': title});
+  }
+
+  Future<int> insertMessage(
+      int conversationId, String role, String content) async {
+    Database db = await instance.database;
+    return await db.insert('Messages', {
       'conversation_id': conversationId,
       'role': role,
       'content': content,
-      'is_image': isImage ? 1 : 0,
-    },
-    conflictAlgorithm: ConflictAlgorithm.replace,
-  );
+    });
+  }
+
+  Future<int> insertMedia(
+      int conversationId, String mimeType, String path) async {
+    Database db = await instance.database;
+    return await db.insert('Media', {
+      'conversation_id': conversationId,
+      'mime_type': mimeType,
+      'path': path,
+    });
+  }
+
+  Future<String> _getAppDirectory() async {
+    final directory = await getApplicationDocumentsDirectory();
+    final appDir = directory.path;
+
+    final imageDir = Directory('$appDir/images');
+    if (!await imageDir.exists()) {
+      await imageDir.create(recursive: false);
+    }
+
+    final videoDir = Directory('$appDir/videos');
+    if (!await videoDir.exists()) {
+      await videoDir.create(recursive: false);
+    }
+
+    return appDir;
+  }
 }
-
-Future<List<Map<String, dynamic>>> getMessages(Database db) async {
-  return await db.query('messages');
-}
-
-
-
-Future<void> truncateImagesTable(Database db) async {
-  await db.transaction((txn) async {
-    await txn.execute('DROP TABLE IF EXISTS images');
-    await txn.execute('''
-      CREATE TABLE images (
-        id TEXT PRIMARY KEY,
-        path TEXT NOT NULL,
-        mime_type TEXT NOT NULL
-      )
-    ''');
-  });
-}
-
-Future<void> insertImageWithTruncate(Database db, String id, String path, String mimeType) async {
-  await truncateImagesTable(db);
-  await insertImage(db, id, path, mimeType);
-}
-
