@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:flutterbasics/pages/Dashboard.dart';
 import 'package:flutterbasics/pages/Settings.dart';
 import 'package:flutterbasics/pages/Speech_To_Text.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:modal_progress_hud_nsn/modal_progress_hud_nsn.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutterbasics/firebase_options.dart';
@@ -13,14 +13,16 @@ import 'package:flutterbasics/upload.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'app_state.dart'; // Import the AppState class
-import 'dart:io';
 import 'package:sqflite/sqflite.dart';
 import 'package:flutterbasics/services/database.dart';
+import 'package:mime/mime.dart';
+import 'dart:developer' as developer;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
-  final database = await initializeDatabase();
+  final DatabaseHelper dbHelper = DatabaseHelper.instance;
+  final database = await dbHelper.database;
   await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform); // Initialize Firebase
 
@@ -64,7 +66,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  List<String> descriptions = [];
+  List<Map<String, dynamic>> descriptions = [];
   File? imageGal;
   File? imageCam;
   bool showSpinner = false;
@@ -96,22 +98,162 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _loadMessages() async {
-    messages = await getMessages(widget.database);
+    messages = await dbHelper.getMessages(1);
     setState(() {});
+  }
+
+  Future<void> getMedia(BuildContext context, AppState appState) async {
+    File? path = await pickMedia(context, addDescription, appState);
+    final mimetype = lookupMimeType(path!.path);
+    if(mimetype!.contains("image")){
+      final image = await saveImage(path);
+      messages.add(
+        {
+          'id': image['id'],
+          'conversation_id': '0',
+          'role': 'user',
+          'content': '',
+          'mime_type': '',
+          'path': image['path'],
+          'timestamp': DateTime.now().millisecondsSinceEpoch,
+          'type': 'media',
+        },
+      );
+      Map<String, dynamic> upload =
+          await uploadImage(path, addDescription, appState);
+      messages.add(
+        {
+          'id': '',
+          'conversation_id': '0',
+          'role': 'assistant',
+          'content': upload['Description'],
+          'mime_type': '',
+          'path': '',
+          'timestamp': DateTime.now().millisecondsSinceEpoch,
+          'type': 'message',
+        },
+      );
+    }
+    else{
+      final video = await saveVideo(path);
+      messages.add(
+        {
+          'id': video['id'],
+          'conversation_id': '0',
+          'role': 'user',
+          'content': '',
+          'mime_type': '',
+          'path': video['path'],
+          'timestamp': DateTime.now().millisecondsSinceEpoch,
+          'type': 'media',
+        },
+      );
+      Map<String, dynamic> upload =
+          await uploadVideo(path, addDescription, appState);
+      messages.add(
+        {
+          'id': '',
+          'conversation_id': '0',
+          'role': 'assistant',
+          'content': upload['Description'],
+          'mime_type': '',
+          'path': '',
+          'timestamp': DateTime.now().millisecondsSinceEpoch,
+          'type': 'message',
+        },
+      );
+    }
+  }
+
+  Future<void> getVideo(BuildContext context, AppState appState) async {
+    File? videoFile = await getVideoFile(context, addDescription, appState);
+    final mimetype = lookupMimeType(videoFile!.path);
+    final path = await saveVideo(videoFile);
+    messages.add(
+      {
+        'id': path['id'],
+        'conversation_id': '0',
+        'role': 'user',
+        'content': '',
+        'mime_type': '',
+        'path': path['path'],
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+        'type': 'media',
+      },
+    );
+    Map<String, dynamic> upload =
+        await uploadVideo(videoFile, addDescription, appState);
+    messages.add(
+      {
+        'id': '',
+        'conversation_id': '0',
+        'role': 'assistant',
+        'content': upload['Description'],
+        'mime_type': '',
+        'path': '',
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+        'type': 'message',
+      },
+    );
+  }
+
+  Future<void> getImage(BuildContext context, AppState appState) async {
+    File? imageFile = await getImageCM(context, addDescription, appState);
+    Map<String, String> path = await saveImage(imageFile);
+
+      messages.add(
+        {
+          'id': path['id'],
+          'conversation_id': '0',
+          'role': 'user',
+          'content': '',
+          'mime_type': '',
+          'path': path['path'],
+          'timestamp': DateTime.now().millisecondsSinceEpoch,
+          'type': 'media',
+        },
+      );
+
+    Map<String, dynamic> upload =
+        await uploadImage(imageFile, addDescription, appState);
+    developer.log('Image path: $path');
+      messages.add(
+        {
+          'id': '',
+          'conversation_id': '0',
+          'role': 'assistant',
+          'content': upload['Description'],
+          'mime_type': '',
+          'path': '',
+          'timestamp': DateTime.now().millisecondsSinceEpoch,
+          'type': 'message',
+        },
+      );
+      dbHelper.insertMessage(1, "assistant", descriptions.last['Description']);
   }
 
   void _sendMessage() async {
     String message = _controller.text.trim();
     if (message.isNotEmpty) {
-      await insertMessage(widget.database, 1, 'user', message);
-      print(
-          'Message sent to database: $message'); 
+      await dbHelper.insertMessage(1, 'user', message);
+      developer.log('Message sent to database: $message');
       _controller.clear();
-      _loadMessages();
+      messages.add(
+        {
+          'id': '',
+          'conversation_id': '0',
+          'role': 'user',
+          'content': message,
+          'mime_type': '',
+          'path': '',
+          'timestamp': DateTime.now().millisecondsSinceEpoch,
+          'type': 'message',
+        },
+      );
     }
   }
 
-  void addDescription(String description) {
+  void addDescription(Map<String, dynamic> description) {
     setState(() {
       descriptions.add(description);
     });
@@ -141,23 +283,18 @@ class _HomePageState extends State<HomePage> {
         ),
         body: ModalProgressHUD(
           inAsyncCall: appState.showSpinner,
-          // ignore: sort_child_properties_last
           child: Column(
             children: [
-              const Center(
-                child: Text(
-                  "Welcome to Vision Crafters",
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-              ),
               Expanded(
                 child: ListView.builder(
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
                     final message = messages[index];
                     final isMe = message['role'] == 'user';
-                    if (message['is_image'] == 1) {
-                      final imageProvider = AssetImage("./assets/images/logo.jpg");
+                    developer.log('Message: ${message['type']}');
+                    if (message['type'] == 'media') {
+                      final imageProvider = File(message['path']);
+                      developer.log('Image path: ${message['path']}');
                       return ListTile(
                         title: _buildImageBubble(imageProvider,
                             isMe: isMe, context: context),
@@ -186,20 +323,17 @@ class _HomePageState extends State<HomePage> {
                           SpeedDialChild(
                             shape: const CircleBorder(),
                             child: const Icon(Icons.camera),
-                            onTap: () =>
-                                getImageCM(context, addDescription, appState),
+                            onTap: () => getImage(context, appState),
                           ),
                           SpeedDialChild(
                             shape: const CircleBorder(),
                             child: const Icon(Icons.video_call),
-                            onTap: () =>
-                                getVideoFile(context, addDescription, appState),
+                            onTap: () => getVideo(context, appState),
                           ),
                           SpeedDialChild(
                             shape: const CircleBorder(),
                             child: const Icon(Icons.browse_gallery_sharp),
-                            onTap: () =>
-                                pickMedia(context, addDescription, appState),
+                            onTap: () => getMedia(context, appState),
                           ),
                         ],
                       ),
@@ -240,12 +374,11 @@ class _HomePageState extends State<HomePage> {
               ),
             ],
           ),
-          // floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
         ));
   }
 }
 
-Widget _buildImageBubble(ImageProvider image,
+Widget _buildImageBubble(File image,
     {required bool isMe, required BuildContext context}) {
   final imageWidth = MediaQuery.of(context).size.width * 0.7;
   final alignment = isMe ? MainAxisAlignment.end : MainAxisAlignment.start;
@@ -260,12 +393,7 @@ Widget _buildImageBubble(ImageProvider image,
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(20),
-          child: Image(
-            image: image,
-            fit: BoxFit.cover,
-            width: imageWidth,
-            height: 150,
-          ),
+          child: Image.file(image),
         ),
       ),
     ],

@@ -6,13 +6,13 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'dart:convert';
 import 'package:mime/mime.dart';
-import 'app_state.dart'; // Import the AppState class
-import 'package:sqflite/sqflite.dart';
-import 'package:path/path.dart';
-import 'package:flutterbasics/services/database.dart';
 import 'package:path_provider/path_provider.dart';
+import 'app_state.dart'; // Import the AppState class
+import 'package:flutterbasics/services/database.dart';
+import 'dart:developer' as developer;
 
-// Function to get application directory path and create image and video folders
+final DatabaseHelper dbHelper = DatabaseHelper.instance;
+
 Future<String> _getAppDirectory() async {
   final directory = await getApplicationDocumentsDirectory();
   final appDir = directory.path;
@@ -30,10 +30,9 @@ Future<String> _getAppDirectory() async {
   return appDir;
 }
 
-Future<void> pickMedia(BuildContext context, Function(String) addDescription,
-    AppState appState) async {
+Future<File?> pickMedia(BuildContext context,
+    Function(Map<String, dynamic>) addDescription, AppState appState) async {
   final ImagePicker _pickerGal = ImagePicker();
-  final Database db = await initializeDatabase(); // Initialize the database
 
   final choice = await showDialog<String>(
     context: context,
@@ -75,27 +74,28 @@ Future<void> pickMedia(BuildContext context, Function(String) addDescription,
 
       if (mimeType != null && mimeType.startsWith('video')) {
         appState.setSpinnerVisibility(true);
-        await uploadVideo(File(pickedFile.path), addDescription, appState,
-            db); // Pass the db instance
         appState.setSpinnerVisibility(false);
+        return File(pickedFile.path);
       } else if (mimeType != null && mimeType.startsWith('image')) {
         appState.setSpinnerVisibility(true);
-        await uploadImage(File(pickedFile.path), addDescription, appState,
-            db); // Pass the db instance
-        appState.setSpinnerVisibility(false);
+        return File(pickedFile.path);
       } else {
-        print("Unsupported file type");
+        developer.log("Unsupported file type");
+        return null;
       }
     } else {
-      print("No file selected");
+      developer.log("No file selected");
+      return null;
     }
+  } else {
+    developer.log("No choice selected");
+    return null;
   }
 }
 
-Future<void> getImageCM(BuildContext context, Function(String) addDescription,
-    AppState appState) async {
+Future<File?> getImageCM(BuildContext context,
+    Function(Map<String, dynamic>) addDescription, AppState appState) async {
   final ImagePicker _pickerCam = ImagePicker();
-  final Database db = await initializeDatabase(); // Initialize the database
 
   final pickedFile_Camera = await _pickerCam.pickImage(
     source: ImageSource.camera,
@@ -105,54 +105,31 @@ Future<void> getImageCM(BuildContext context, Function(String) addDescription,
   if (pickedFile_Camera != null) {
     File imageCam = File(pickedFile_Camera.path);
     appState.setSpinnerVisibility(true);
-    await uploadImage(
-        imageCam, addDescription, appState, db); // Pass the db instance
     appState.setSpinnerVisibility(false);
-  } else {
-    print("No image Captured");
+    return imageCam;
   }
+  return null;
 }
 
-Future<void> getVideoFile(BuildContext context, Function(String) addDescription,
-    AppState appState) async {
+Future<File?> getVideoFile(BuildContext context,
+    Function(Map<String, String>) addDescription, AppState appState) async {
   final ImagePicker _pickerCam = ImagePicker();
-  final Database db = await initializeDatabase(); // Initialize the database
 
   appState.setSpinnerVisibility(true);
   final videoFile = await _pickerCam.pickVideo(source: ImageSource.camera);
 
   if (videoFile != null) {
-    final storageRef = FirebaseStorage.instance.ref();
-    final uniqueId = Uuid().v1();
-    final fileRef = storageRef.child('$uniqueId.mp4');
-
-    await fileRef.putFile(File(videoFile.path));
-
-    final videoUrl = await fileRef.getDownloadURL();
-
-    final response = await FirebaseFunctions.instance
-        .httpsCallable('video')
-        .call({'data': videoUrl, 'mime_type': 'video/mp4'});
-
-    final data = response.data;
-
-    final description_Video_camera =
-        ('Danger: ${data["Danger"]}\nTitle: ${data["Title"]}\nDescription: ${data["Description"]}');
-
-    addDescription(description_Video_camera);
-
-    print(
-        'Danger: ${data["Danger"]}\nTitle: ${data["Title"]}\nDescription: ${data["Description"]}');
-
-    await insertVideo(db, uniqueId, videoFile.path, 'video/mp4');
+    return File(videoFile.path);
+  } else {
+    developer.log("No video captured");
+    appState.setSpinnerVisibility(false);
+    return null;
   }
-
-  appState.setSpinnerVisibility(false);
 }
 
-Future<void> uploadImage(File? imageFile, Function(String) addDescription,
-    AppState appState, Database db) async {
-  if (imageFile == null) return;
+Future<Map<String, dynamic>> uploadImage(File? imageFile,
+    Function(Map<String, dynamic>) addDescription, AppState appState) async {
+  if (imageFile == null) return {'path': '', 'id': ""};
 
   appState.setSpinnerVisibility(true);
 
@@ -162,48 +139,33 @@ Future<void> uploadImage(File? imageFile, Function(String) addDescription,
   final mimeType = lookupMimeType(imageFile.path);
 
   if (mimeType == null) {
-    print('Unsupported file format');
+    developer.log('Unsupported file format');
     appState.setSpinnerVisibility(false);
-    return;
+    return {'path': '', 'id': ""};
   }
 
-  final response = await FirebaseFunctions.instance
-      .httpsCallable('image')
-      .call(<String, dynamic>{
+  final response =
+      await FirebaseFunctions.instance.httpsCallable('image').call({
     'data': base64Image,
     'mime_type': mimeType,
   });
 
   if (response.data != null) {
-    final description =
-        'Danger: ${response.data["Danger"]}\nTitle: ${response.data["Title"]}\nDescription: ${response.data["Description"]}';
-
-    addDescription(description);
-
-    print(description);
     final data = response.data;
-    print(data);
-    print(
-        'Danger: ${data["Danger"]}\nTitle: ${data["Title"]}\nDescription: ${data["Description"]}');
+    developer.log(data.toString());
+    addDescription(data);
 
-    final appDir = await _getAppDirectory();
-    final newFilePath =
-        '$appDir/images/$uniqueImageId.${imageFile.path.split('.').last}';
-    final newFile = await imageFile.copy(newFilePath);
-    print('ID Type: ${uniqueImageId.runtimeType}');
-    print("Mime Type: ${mimeType.runtimeType}");
-    print("File Path: ${newFilePath.runtimeType}"); // Debug print
-
-    await insertImage(db, uniqueImageId, newFilePath, mimeType);
+    appState.setSpinnerVisibility(false);
+    return data;
   } else {
-    print("Failed to upload");
+    developer.log("Failed to upload");
+    appState.setSpinnerVisibility(false);
+    return {'path': '', 'id': ""};
   }
-
-  appState.setSpinnerVisibility(false);
 }
 
-Future<void> uploadVideo(File videoFile, Function(String) addDescription,
-    AppState appState, Database db) async {
+Future<Map<String, String>> uploadVideo(File videoFile,
+    Function(Map<String, String>) addDescription, AppState appState) async {
   final storageRef = FirebaseStorage.instance.ref();
   final uniqueId = Uuid().v1();
   final fileRef = storageRef.child('$uniqueId.mp4');
@@ -217,19 +179,44 @@ Future<void> uploadVideo(File videoFile, Function(String) addDescription,
       .call({'data': videoUrl, 'mime_type': 'video/mp4'});
 
   final data = response.data;
-
-  final description_Vid =
-      'Danger: ${data["Danger"]}\nTitle: ${data["Title"]}\nDescription: ${data["Description"]}';
-
-  addDescription(description_Vid);
-
-  print(
-      'Danger: ${data["Danger"]}\nTitle: ${data["Title"]}\nDescription: ${data["Description"]}');
-
-  final appDir = await _getAppDirectory();
-  final newFile = await videoFile.copy('$appDir/videos/$uniqueId.mp4');
-
-  await insertVideo(db, uniqueId, newFile.path, 'video/mp4');
+  developer.log(data.toString());
+  addDescription(data);
 
   appState.setSpinnerVisibility(false);
+  return data;
+}
+
+Future<Map<String, String>> saveImage(File? imageFile) async {
+  final appDir = await _getAppDirectory();
+  final uniqueImageId = Uuid().v1();
+  if (imageFile == null) {
+    developer.log('No image file');
+    return {'path': '', 'id': ""};
+  }
+  final mimeType = lookupMimeType(imageFile.path);
+
+
+  if (mimeType == null) {
+    developer.log('Unsupported file format');
+    return {'path': '', 'id': ""};
+  }
+  final bytes = await imageFile.readAsBytes();
+  final newFilePath =
+      '$appDir/images/$uniqueImageId.${imageFile.path.split('.').last}';
+  // Encode the image to PNG or JPG before saving to file system.
+  File file = File(newFilePath);
+  await file.writeAsBytes(bytes);
+
+  final id = await dbHelper.insertMedia(0, mimeType, newFilePath);
+  return {'path': newFilePath, 'id': id.toString()};
+}
+
+Future<Map<String, dynamic>> saveVideo(File videoFile) async {
+  final appDir = await _getAppDirectory();
+  final uniqueId = Uuid().v1();
+  final newFilePath = '$appDir/videos/$uniqueId.mp4';
+  final newFile = await videoFile.copy(newFilePath);
+
+  final id = await dbHelper.insertMedia(0, 'video/mp4', newFilePath);
+  return {'path': newFilePath, 'id': id};
 }
