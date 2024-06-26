@@ -75,7 +75,7 @@ class DatabaseHelper {
     WHERE conversation_id = ? 
     UNION
     SELECT 
-      media_id as id, conversation_id, NULL as role, NULL as content, mime_type, path, timestamp, 'media' as type 
+      media_id as id, conversation_id, "user" as role, NULL as content, mime_type, path, timestamp, 'media' as type 
     FROM Media 
     WHERE conversation_id = ? 
     ORDER BY timestamp ASC

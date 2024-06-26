@@ -98,158 +98,84 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _loadMessages() async {
-    messages = await dbHelper.getMessages(1);
+    List<Map<String, dynamic>> data = await dbHelper.getConversationData(0);
+    messages = List<Map<String, dynamic>>.from(data);
+    developer.log(messages.toString());
     setState(() {});
   }
 
+  Future<void> addMessage(final id, final role, final content, final mimeType,
+      final path, final type) async {
+    setState(() {
+      messages.add({
+        'id': id.toString(),
+        'conversation_id': '0',
+        'role': role,
+        'content': content,
+        'mime_type': mimeType,
+        'path': path,
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+        'type': type,
+      });
+    });
+  }
+
   Future<void> getMedia(BuildContext context, AppState appState) async {
-    File? path = await pickMedia(context, addDescription, appState);
-    final mimetype = lookupMimeType(path!.path);
-    if(mimetype!.contains("image")){
-      final image = await saveImage(path);
-      messages.add(
-        {
-          'id': image['id'],
-          'conversation_id': '0',
-          'role': 'user',
-          'content': '',
-          'mime_type': '',
-          'path': image['path'],
-          'timestamp': DateTime.now().millisecondsSinceEpoch,
-          'type': 'media',
-        },
-      );
-      Map<String, dynamic> upload =
-          await uploadImage(path, addDescription, appState);
-      messages.add(
-        {
-          'id': '',
-          'conversation_id': '0',
-          'role': 'assistant',
-          'content': upload['Description'],
-          'mime_type': '',
-          'path': '',
-          'timestamp': DateTime.now().millisecondsSinceEpoch,
-          'type': 'message',
-        },
-      );
-    }
-    else{
-      final video = await saveVideo(path);
-      messages.add(
-        {
-          'id': video['id'],
-          'conversation_id': '0',
-          'role': 'user',
-          'content': '',
-          'mime_type': '',
-          'path': video['path'],
-          'timestamp': DateTime.now().millisecondsSinceEpoch,
-          'type': 'media',
-        },
-      );
-      Map<String, dynamic> upload =
-          await uploadVideo(path, addDescription, appState);
-      messages.add(
-        {
-          'id': '',
-          'conversation_id': '0',
-          'role': 'assistant',
-          'content': upload['Description'],
-          'mime_type': '',
-          'path': '',
-          'timestamp': DateTime.now().millisecondsSinceEpoch,
-          'type': 'message',
-        },
-      );
+    File? mediaFileName = await pickMedia(context, appState);
+    final mimetype = lookupMimeType(mediaFileName!.path);
+    if (mimetype!.contains("image")) {
+      final image = await saveImage(mediaFileName);
+      addMessage(image['id'], 'user', '', mimetype, image['path'], 'media');
+      Map<String, dynamic> upload = await uploadImage(mediaFileName, appState);
+      final id =
+          await dbHelper.insertMessage(0, "assistant", upload['Description']);
+      addMessage(id, 'assistant', upload['Description'], '', '', 'message');
+    } else {
+      final video = await saveVideo(mediaFileName);
+      addMessage(video['id'], 'user', '', mimetype, video['path'], 'media');
+
+      Map<String, dynamic> upload = await uploadVideo(mediaFileName, appState);
+
+      final id =
+          await dbHelper.insertMessage(0, "assistant", upload['Description']);
+
+      addMessage(id, 'assistant', upload['Description'], '', '', 'message');
     }
   }
 
   Future<void> getVideo(BuildContext context, AppState appState) async {
-    File? videoFile = await getVideoFile(context, addDescription, appState);
+    File? videoFile = await getVideoFile(context, appState);
     final mimetype = lookupMimeType(videoFile!.path);
     final path = await saveVideo(videoFile);
-    messages.add(
-      {
-        'id': path['id'],
-        'conversation_id': '0',
-        'role': 'user',
-        'content': '',
-        'mime_type': '',
-        'path': path['path'],
-        'timestamp': DateTime.now().millisecondsSinceEpoch,
-        'type': 'media',
-      },
-    );
-    Map<String, dynamic> upload =
-        await uploadVideo(videoFile, addDescription, appState);
-    messages.add(
-      {
-        'id': '',
-        'conversation_id': '0',
-        'role': 'assistant',
-        'content': upload['Description'],
-        'mime_type': '',
-        'path': '',
-        'timestamp': DateTime.now().millisecondsSinceEpoch,
-        'type': 'message',
-      },
-    );
+    addMessage(path['id'], 'user', '', mimetype, path['path'], 'media');
+    Map<String, dynamic> upload = await uploadVideo(videoFile, appState);
+    final id =
+        await dbHelper.insertMessage(0, "assistant", upload['Description']);
+    addMessage(id, 'assistant', upload['Description'], '', '', 'message');
   }
 
   Future<void> getImage(BuildContext context, AppState appState) async {
-    File? imageFile = await getImageCM(context, addDescription, appState);
+    File? imageFile = await getImageCM(context, appState);
     Map<String, String> path = await saveImage(imageFile);
+    final mimeType = lookupMimeType(imageFile!.path);
 
-      messages.add(
-        {
-          'id': path['id'],
-          'conversation_id': '0',
-          'role': 'user',
-          'content': '',
-          'mime_type': '',
-          'path': path['path'],
-          'timestamp': DateTime.now().millisecondsSinceEpoch,
-          'type': 'media',
-        },
-      );
+    await addMessage(path['id'], 'user', '', mimeType, path['path'], 'media');
 
-    Map<String, dynamic> upload =
-        await uploadImage(imageFile, addDescription, appState);
+    Map<String, dynamic> upload = await uploadImage(imageFile, appState);
+    final id =
+        await dbHelper.insertMessage(0, "assistant", upload['Description']);
     developer.log('Image path: $path');
-      messages.add(
-        {
-          'id': '',
-          'conversation_id': '0',
-          'role': 'assistant',
-          'content': upload['Description'],
-          'mime_type': '',
-          'path': '',
-          'timestamp': DateTime.now().millisecondsSinceEpoch,
-          'type': 'message',
-        },
-      );
-      dbHelper.insertMessage(1, "assistant", descriptions.last['Description']);
+    await addMessage(id, 'assistant', upload['Description'], '', '', 'message');
+    developer.log('Image uploaded: ${upload['Description']}');
   }
 
   void _sendMessage() async {
     String message = _controller.text.trim();
     if (message.isNotEmpty) {
-      await dbHelper.insertMessage(1, 'user', message);
+      final id = await dbHelper.insertMessage(0, 'user', message);
       developer.log('Message sent to database: $message');
       _controller.clear();
-      messages.add(
-        {
-          'id': '',
-          'conversation_id': '0',
-          'role': 'user',
-          'content': message,
-          'mime_type': '',
-          'path': '',
-          'timestamp': DateTime.now().millisecondsSinceEpoch,
-          'type': 'message',
-        },
-      );
+      addMessage(id, 'user', message, '', '', 'message');
     }
   }
 
