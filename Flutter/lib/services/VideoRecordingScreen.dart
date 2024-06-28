@@ -42,21 +42,20 @@ class _VideoRecordingScreenState extends State<VideoRecordingScreen> {
           _isRecording = true;
         });
       } else {
-        final Directory appDir = await getApplicationDocumentsDirectory();
-        final String videoPath = path.join(
-          appDir.path,
-          '${DateTime.now()}.mp4',
+        XFile video = await _controller.stopVideoRecording();
+        final Directory tempDir = await getTemporaryDirectory();
+        final String newPath = path.join(
+          tempDir.path,
+          '${DateTime.now().millisecondsSinceEpoch}.mp4',
         );
 
-        XFile video = await _controller.stopVideoRecording();
-        File videoFile = File(video.path);
-        File savedVideo = await videoFile.copy(videoPath);
+        File newFile = await File(video.path).copy(newPath);
 
         setState(() {
           _isRecording = false;
         });
 
-        Navigator.pop(context, savedVideo);
+        Navigator.pop(context, newFile);
       }
     } catch (e) {
       print(e);

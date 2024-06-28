@@ -36,16 +36,12 @@ class _CameraPreviewScreenState extends State<CameraPreviewScreen> {
       await _initializeControllerFuture;
 
       final Directory appDir = await getApplicationDocumentsDirectory();
-      final String imagePath = path.join(
-        appDir.path,
-        '${DateTime.now()}.png',
-      );
+
 
       XFile picture = await _controller.takePicture();
-      File imageFile = File(picture.path);
-      File savedImage = await imageFile.copy(imagePath);
 
-      Navigator.pop(context, savedImage);
+
+      Navigator.pop(context, picture);
     } catch (e) {
       print(e);
     }

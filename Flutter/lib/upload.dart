@@ -150,25 +150,6 @@ Future<File?> getImageCM(BuildContext context, AppState appState) async {
   return null;
 }
 
-//function for getting an image from the Camera by taking the required parameters.
-// Future<File?> getImageCM(BuildContext context, AppState appState) async {
-//   final ImagePicker _pickerCam = ImagePicker();
-
-//   final pickedFile_Camera = await _pickerCam.pickImage(
-//     source: ImageSource.camera,
-//     imageQuality: 100,
-//   );
-
-//   if (pickedFile_Camera != null) { //if the file is picked from the camera.
-
-//     File imageCam = File(pickedFile_Camera.path);
-//     appState.setSpinnerVisibility(true);
-//     appState.setSpinnerVisibility(false);
-//     return imageCam;
-//   }
-//   return null;
-// }
-
 //function for getting a video from the Camera by taking the required parameters.
 
 Future<File?> getVideoFile(BuildContext context, AppState appState) async {
@@ -199,24 +180,6 @@ Future<File?> getVideoFile(BuildContext context, AppState appState) async {
     return null;
   }
 }
-// Future<File?> getVideoFile(BuildContext context, AppState appState) async {
-//   final ImagePicker _pickerCam = ImagePicker();
-
-//   appState.setSpinnerVisibility(true);
-//   final videoFile = await _pickerCam.pickVideo(source: ImageSource.camera);
-//   //will open camera to shoot a video, and that video file will be stored in the
-//   //variable videoFile.
-
-//   if (videoFile != null) {
-//     // if videoFile is not null
-
-//     return File(videoFile.path);
-//   } else {
-//     developer.log("No video captured");
-//     appState.setSpinnerVisibility(false);
-//     return null;
-//   }
-// }
 
 //function with parameters, used for uploading images
 Future<Map<String, dynamic>> uploadImage(
@@ -341,7 +304,7 @@ Future<Map<String, String>> saveImage(File? imageFile) async {
 Future<Map<String, dynamic>> saveVideo(File? videoFile) async {
   final appDir = await _getAppDirectory();
   if (videoFile == null) {
-    developer.log('No video file');
+    developer.log('No video file'); 
     return {'path': '', 'id': ''};
   }
   final filename = path.basename(videoFile.path);
