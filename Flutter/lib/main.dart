@@ -310,6 +310,8 @@ class _HomePageState extends State<HomePage> {
                         //Padding widget to add padding to the text input field
                       padding: const EdgeInsets.symmetric(horizontal: 8.0),
                         child: TextFormField(
+                          controller: _controller,
+                          focusNode: _focusNode,
                           decoration: InputDecoration(
                             hintText: 'Enter your message...',
                             border: OutlineInputBorder(
