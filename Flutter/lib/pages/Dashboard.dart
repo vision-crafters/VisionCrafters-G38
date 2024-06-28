@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutterbasics/ChatScreen.dart';
+import 'package:flutterbasics/pages/ChatScreen.dart';
 
 class DashBoardScreen extends StatelessWidget {
   final List<Map<String, String>> items = [
