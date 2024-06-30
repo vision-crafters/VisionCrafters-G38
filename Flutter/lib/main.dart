@@ -3,6 +3,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'dart:io';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:flutterbasics/pages/Dashboard.dart';
 import 'package:flutterbasics/pages/Settings.dart';
@@ -34,9 +35,10 @@ void main() async {
     //the app is running in debug mode.
     final host = dotenv.get('HOST');
     FirebaseFunctions.instanceFor(region: "us-central1")
-        .useFunctionsEmulator(host, 5001);//Uses the local emulator
+        .useFunctionsEmulator(host, 5001); //Uses the local emulator
   }
-  runApp(MyApp(database: database)); //Launches the root widget of the application
+  runApp(
+      MyApp(database: database)); //Launches the root widget of the application
 }
 
 class MyApp extends StatelessWidget {
@@ -49,19 +51,19 @@ class MyApp extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (_) => AppState(),
       child: ChangeNotifierProvider(
-      //Provides the AppState to the widget tree,
-      //allowing state management.
-      create: (_) => AppState(),
-      child: MaterialApp(
-        //Sets up the material design for the app,
-        //including themes and the home page.
+        //Provides the AppState to the widget tree,
+        //allowing state management.
+        create: (_) => AppState(),
+        child: MaterialApp(
+          //Sets up the material design for the app,
+          //including themes and the home page.
           debugShowCheckedModeBanner: false,
           title: "Vision Crafters",
           theme: ThemeData.light(),
           darkTheme: ThemeData.dark(),
           themeMode: ThemeMode.system,
           home: HomePage(database: database),
-      ),
+        ),
         //The initial screen displayed when the app starts.
       ),
     );
@@ -72,14 +74,18 @@ class MyApp extends StatelessWidget {
 class HomePage extends StatefulWidget {
   final Database database;
 
-  const HomePage({super.key, required this.database}); //constructor for the HomePage widget
+  const HomePage(
+      {super.key,
+      required this.database}); //constructor for the HomePage widget
 
   @override
-  State<HomePage> createState() => _HomePageState();//Creates the state of the widget
+  State<HomePage> createState() =>
+      _HomePageState(); //Creates the state of the widget
 }
 
 class _HomePageState extends State<HomePage> {
-  bool showSpinner = false; //Boolean to control the display of a loading spinner.
+  bool showSpinner =
+      false; //Boolean to control the display of a loading spinner.
 
   List<Map<String, dynamic>> messages = [];
   final TextEditingController _controller = TextEditingController();
@@ -189,7 +195,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     //Builds the UI of the home page
@@ -197,24 +202,27 @@ class _HomePageState extends State<HomePage> {
     return GestureDetector(
       onDoubleTap: () {
         getImage(context, appState);
-      },//Double tap gesture to open the camera
+      }, //Double tap gesture to open the camera
       onLongPress: () {
         showDialog(
           context: context,
           builder: (context) => const Speech(),
         );
-      },    
+      },
       child: Scaffold(
         appBar: AppBar(
           //Displays the title and a settings button.
-        title: const Text("Vision Crafters"),
+          title: const Text("Vision Crafters"),
           actions: [
             IconButton(
               icon: const Icon(Icons.settings),
-              onPressed: () {//Function to be executed when the settings button is pressed
+              onPressed: () {
+                //Function to be executed when the settings button is pressed
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const SettingsPage()),//Navigates to the settings page
+                  MaterialPageRoute(
+                      builder: (context) =>
+                          const SettingsPage()), //Navigates to the settings page
                 );
               },
             ),
@@ -222,12 +230,12 @@ class _HomePageState extends State<HomePage> {
         ),
         drawer: Drawer(
           //Provides a navigation drawer
-        width: MediaQuery.of(context).size.width * 0.8,
-          child: DashBoardScreen(),//Displays the dashboard screen
+          width: MediaQuery.of(context).size.width * 0.8,
+          child: DashBoardScreen(), //Displays the dashboard screen
         ),
         body: ModalProgressHUD(
           //Displays a loading spinner when appState.showSpinner is true
-        inAsyncCall: appState.showSpinner,
+          inAsyncCall: appState.showSpinner,
           child: Column(
             children: [
               //Displays the UI of the home page
@@ -256,59 +264,60 @@ class _HomePageState extends State<HomePage> {
               ),
               Container(
                 // Displays a floating action button
-              padding: const EdgeInsets.all(8.0), // Padding around the button
+                padding: const EdgeInsets.all(8.0), // Padding around the button
                 child: Row(
                   //Contains a speed dial for image/video picking,a text
-                //input field, and a microphone button for speech-to-text
-                children: [
+                  //input field, and a microphone button for speech-to-text
+                  children: [
                     FloatingActionButton(
                       //Displays a speed dial for image/video picking
-                    shape: const CircleBorder(),
+                      shape: const CircleBorder(),
                       heroTag: "UniqueTag2", //Unique identifier for the button
                       onPressed: () {},
                       child: SpeedDial(
                         //Speed dial for image/video picking
-                      animatedIcon: AnimatedIcons
-                          .menu_close, //Animated icon for the button
+                        animatedIcon: AnimatedIcons
+                            .menu_close, //Animated icon for the button
                         direction:
-                          SpeedDialDirection.up, //Direction of the speed dial
+                            SpeedDialDirection.up, //Direction of the speed dial
                         children: [
                           //List of children for the speed dial
-                        SpeedDialChild(
+                          SpeedDialChild(
                             //Child for the camera button
-                          shape: const CircleBorder(), //Shape of the button
-                            child: const Icon(Icons.camera), //Icon for the button
+                            shape: const CircleBorder(), //Shape of the button
+                            child:
+                                const Icon(Icons.camera), //Icon for the button
                             onTap: () => getImage(context, appState),
                             //Function to be executed when the button is pressed
-                          //Calls the getImageCM function with the context,
-                          //addDescription, and appState as parameters
-                        ),
+                            //Calls the getImageCM function with the context,
+                            //addDescription, and appState as parameters
+                          ),
                           SpeedDialChild(
                             //Child for the video button
-                          shape: const CircleBorder(),
+                            shape: const CircleBorder(),
                             child: const Icon(Icons.video_call),
                             onTap: () => getVideo(context, appState),
                             // Function to be executed when the button is pressed
-                          //Calls the getVideoFile function with the context,
-                          //addDescription, and appState as parameters
-                        ),
+                            //Calls the getVideoFile function with the context,
+                            //addDescription, and appState as parameters
+                          ),
                           SpeedDialChild(
                             //Child for the gallery button
-                          shape: const CircleBorder(),
+                            shape: const CircleBorder(),
                             child: const Icon(Icons.browse_gallery_sharp),
                             onTap: () => getMedia(context, appState),
                             //Function to be executed when the button is pressed
-                          //Calls the pickMedia function with the context,
-                          //addDescription, and appState as parameters
-                        ),
+                            //Calls the pickMedia function with the context,
+                            //addDescription, and appState as parameters
+                          ),
                         ],
                       ),
                     ),
                     Expanded(
                       //Expanded widget to expand the text input field
-                    child: Padding(
+                      child: Padding(
                         //Padding widget to add padding to the text input field
-                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
                         child: TextFormField(
                           controller: _controller,
                           focusNode: _focusNode,
@@ -323,18 +332,20 @@ class _HomePageState extends State<HomePage> {
                     ),
                     FloatingActionButton(
                       //Displays a microphone button for speech-to-text
-                    onPressed:  _isFocused
-                      ? _sendMessage
-                      : () {
-                      showDialog(
-                          //Displays a dialog box for speech-to-text
-                        context: context, //Context for the dialog box
-                          builder: (context) =>
-                            const Speech(), //Speech dialog box
-                        // will be opened up when the microphone button is pressed
-                        );
-                      },
-                      child: Icon(_isFocused ? Icons.send : Icons.mic), // Icon for the microphone button
+                      onPressed: _isFocused
+                          ? _sendMessage
+                          : () {
+                              showDialog(
+                                //Displays a dialog box for speech-to-text
+                                context: context, //Context for the dialog box
+                                builder: (context) =>
+                                    const Speech(), //Speech dialog box
+                                // will be opened up when the microphone button is pressed
+                              );
+                            },
+                      child: Icon(_isFocused
+                          ? Icons.send
+                          : Icons.mic), // Icon for the microphone button
                     ),
                   ], //end of children
                 ),
@@ -343,8 +354,8 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      //This places the FAB at the center of the bottom of the screen, docked 
-      //within the BottomAppBar.
+        //This places the FAB at the center of the bottom of the screen, docked
+        //within the BottomAppBar.
       ),
     );
   }
