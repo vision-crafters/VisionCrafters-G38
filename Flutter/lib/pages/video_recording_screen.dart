@@ -3,18 +3,18 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
+import 'dart:developer' as developer;
 
 class VideoRecordingScreen extends StatefulWidget {
   final CameraController controller;
 
-  const VideoRecordingScreen({Key? key, required this.controller})
-      : super(key: key);
+  const VideoRecordingScreen({super.key, required this.controller});
 
   @override
-  _VideoRecordingScreenState createState() => _VideoRecordingScreenState();
+  VideoRecordingScreenState createState() => VideoRecordingScreenState();
 }
 
-class _VideoRecordingScreenState extends State<VideoRecordingScreen> {
+class VideoRecordingScreenState extends State<VideoRecordingScreen> {
   late CameraController _controller;
   late Future<void> _initializeControllerFuture;
   bool _isRecording = false;
@@ -58,27 +58,27 @@ class _VideoRecordingScreenState extends State<VideoRecordingScreen> {
         Navigator.pop(context, newFile);
       }
     } catch (e) {
-      print(e);
+      developer.log(e.toString());
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Record a Video')),
+      appBar: AppBar(title: const Text('Record a Video')),
       body: FutureBuilder<void>(
         future: _initializeControllerFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.done) {
             return CameraPreview(_controller);
           } else {
-            return Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator());
           }
         },
       ),
       floatingActionButton: FloatingActionButton(
-        child: Icon(_isRecording ? Icons.stop : Icons.videocam),
         onPressed: _recordVideo,
+        child: Icon(_isRecording ? Icons.stop : Icons.videocam),
       ),
     );
   }

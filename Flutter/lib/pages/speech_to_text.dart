@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart';
+import 'dart:developer' as developer;
 
 class Speech extends StatefulWidget {
-  const Speech({Key? key}) : super(key: key);
+  const Speech({super.key});
 
   @override
   State<Speech> createState() => _SpeechState();
@@ -38,7 +39,7 @@ class _SpeechState extends State<Speech> {
     setState(() {
       _wordsSpoken = "${result.recognizedWords}";
     });
-    print("Words spoken: $_wordsSpoken");
+    developer.log("Words spoken: $_wordsSpoken");
   }
 
   @override
