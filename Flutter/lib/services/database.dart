@@ -1,7 +1,4 @@
-import 'dart:io';
-
 import 'package:path/path.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
 class DatabaseHelper {
@@ -88,7 +85,8 @@ class DatabaseHelper {
 
   Future<List<Map<String, dynamic>>> getMessages(int conversationId) async {
     List<Map<String, dynamic>> data = await getConversationData(conversationId);
-    List<Map<String, dynamic>> messages = data.where((element) => element['type'] == 'message').toList();
+    List<Map<String, dynamic>> messages =
+        data.where((element) => element['type'] == 'message').toList();
     return messages;
   }
 
@@ -115,22 +113,5 @@ class DatabaseHelper {
       'mime_type': mimeType,
       'path': path,
     });
-  }
-
-  Future<String> _getAppDirectory() async {
-    final directory = await getApplicationDocumentsDirectory();
-    final appDir = directory.path;
-
-    final imageDir = Directory('$appDir/images');
-    if (!await imageDir.exists()) {
-      await imageDir.create(recursive: false);
-    }
-
-    final videoDir = Directory('$appDir/videos');
-    if (!await videoDir.exists()) {
-      await videoDir.create(recursive: false);
-    }
-
-    return appDir;
   }
 }
