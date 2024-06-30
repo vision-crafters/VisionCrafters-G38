@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
@@ -18,6 +17,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:flutterbasics/services/database.dart';
 import 'package:mime/mime.dart';
 import 'dart:developer' as developer;
+import 'package:video_player/video_player.dart';
 
 void main() async {
   WidgetsFlutterBinding
@@ -83,6 +83,76 @@ class HomePage extends StatefulWidget {
       _HomePageState(); //Creates the state of the widget
 }
 
+class VideoPlayerWidget extends StatefulWidget {
+  final File video;
+
+  const VideoPlayerWidget({Key? key, required this.video}) : super(key: key);
+
+  @override
+  _VideoPlayerWidgetState createState() => _VideoPlayerWidgetState();
+}
+
+class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
+  late VideoPlayerController _controller;
+  bool _isPlaying = false;
+  bool _isFullScreen = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = VideoPlayerController.file(widget.video)
+      ..initialize().then((_) {
+        setState(() {});
+        _controller.play();
+        _isPlaying = true;
+      });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _togglePlayPause() {
+    setState(() {
+      if (_isPlaying) {
+        _controller.pause();
+      } else {
+        _controller.play();
+      }
+      _isPlaying = !_isPlaying;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      alignment: Alignment.bottomCenter,
+      children: [
+        AspectRatio(
+          aspectRatio: _controller.value.aspectRatio,
+          child: VideoPlayer(_controller),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              IconButton(
+                onPressed: _togglePlayPause,
+                icon: Icon(
+                  _isPlaying ? Icons.pause : Icons.play_arrow,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
 class _HomePageState extends State<HomePage> {
   bool showSpinner =
       false; //Boolean to control the display of a loading spinner.
@@ -195,6 +265,30 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+// Inside your _HomePageState class
+  Widget _buildVideoBubble(String video,
+      {required bool isMe, required BuildContext context}) {
+    final videoWidth = MediaQuery.of(context).size.width * 0.7;
+    final alignment = isMe ? MainAxisAlignment.end : MainAxisAlignment.start;
+
+    return Row(
+      mainAxisAlignment: alignment,
+      children: [
+        Container(
+          constraints: BoxConstraints(maxWidth: videoWidth),
+          
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: VideoPlayerWidget(video: File(video)),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     //Builds the UI of the home page
@@ -247,12 +341,20 @@ class _HomePageState extends State<HomePage> {
                     final isMe = message['role'] == 'user';
                     developer.log('Message: ${message['type']}');
                     if (message['type'] == 'media') {
-                      final imageProvider = File(message['path']);
-                      developer.log('Image path: ${message['path']}');
-                      return ListTile(
-                        title: _buildImageBubble(imageProvider,
-                            isMe: isMe, context: context),
-                      );
+                      if (message['mime_type'].contains('video')) {
+                        return ListTile(
+                          title: _buildVideoBubble(message['path'],
+                              isMe: isMe, context: context),
+                        );
+
+                      } else {
+                        final imageProvider = File(message['path']);
+                        developer.log('Image path: ${message['path']}');
+                        return ListTile(
+                          title: _buildImageBubble(imageProvider,
+                              isMe: isMe, context: context),
+                        );
+                      }
                     } else {
                       return ListTile(
                         title: _buildMessageBubble(message['content'],
