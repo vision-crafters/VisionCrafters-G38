@@ -1,9 +1,8 @@
-import 'dart:io' show File;
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'dart:io';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:flutterbasics/pages/Dashboard.dart';
 import 'package:flutterbasics/pages/Settings.dart';
@@ -19,6 +18,7 @@ import 'package:flutterbasics/services/database.dart';
 import 'package:mime/mime.dart';
 import 'dart:developer' as developer;
 import 'package:video_player/video_player.dart';
+
 void main() async {
   WidgetsFlutterBinding
       .ensureInitialized(); // Ensure Flutter Firebase is initialized
