@@ -29,7 +29,7 @@ def convert_to_gs_url(url):
 def image(req: https_fn.CallableRequest):
     GOOGLE_API_KEY=os.environ.get('GOOGLE_API_KEY')
     genai.configure(api_key=GOOGLE_API_KEY) # Configure the API key for the Generative AI API
-    config = genai.GenerationConfig(max_output_tokens=1024, temperature=0.6, response_mime_type='plain/text')  # Set the generation configuration
+    config = genai.GenerationConfig(max_output_tokens=512, temperature=0.6, response_mime_type='text/plain')  # Set the generation configuration
     model = genai.GenerativeModel('gemini-1.5-flash') # Initialize the GenerativeModel(gemini-1.5-flash model)
     data = req.data.get('data') # Get the image data from the request
     mime_type = req.data.get('mime_type') # Get the mime type of the image from the request
@@ -45,10 +45,12 @@ def image(req: https_fn.CallableRequest):
 
     #check if the user query is present or not
     if query:
-        textPart = query
+        formatted_query = [ f"role: {message['role']}, content: {message['content']}" for message in query]
+        formatted_string = "\n".join(formatted_query)
+        textPart = formatted_string
     else:
         #re initialize the config to get the response in json format
-        config = genai.GenerationConfig(max_output_tokens=1024, temperature=0.6, response_mime_type='application/json') 
+        config = genai.GenerationConfig(max_output_tokens=512, temperature=0.6, response_mime_type='application/json') 
 
         #system prompt to be used when the user query is not present
         textPart = """
@@ -81,12 +83,16 @@ def image(req: https_fn.CallableRequest):
             "Description": "An image of a crowded train station platform. There are numerous passengers standing near the edge of the platform, waiting for the train. The platform is narrow, and there are no tactile paving strips to guide visually impaired individuals. Additionally, the fast-moving trains and the lack of clear barriers make it a potentially dangerous environment."
         }
         """
-    
-    response = model.generate_content([textPart, filePart], generation_config=config)
-    print(response.candidates[0].content.parts[0].text) # Print the response text
+    print(textPart)
+    model_response = model.generate_content([textPart, filePart], generation_config=config)
+    response_content = model_response.candidates[0].content.parts[0].text
+    print(response_content) # Print the response text
 
-    response_dict = json.loads(response.candidates[0].content.parts[0].text)  # Convert the response text to a json object
-    return response_dict # Return the response json object
+    if config.response_mime_type == 'application/json':
+        response = json.loads(response_content)  # Convert the response text to a json object
+    else:
+        response = {"Description": response_content}
+    return response # Return the response json object
 
 
 @https_fn.on_call()
@@ -94,7 +100,7 @@ def video(req: https_fn.CallableRequest):
     vertexai.init(project='vision-crafters', location='us-central1') # Initialize Vertex AI
 
     #Set the generation configuration for plain text response (used if user query is present)
-    config = vgenai.GenerationConfig(max_output_tokens=1024, temperature=0.6, response_mime_type='plain/text') 
+    config = vgenai.GenerationConfig(max_output_tokens=512, temperature=0.6, response_mime_type='text/plain') 
 
     model = vgenai.GenerativeModel('gemini-1.5-flash') # Initialize the GenerativeModel(gemini-1.5-flash model)
 
@@ -111,10 +117,12 @@ def video(req: https_fn.CallableRequest):
 
     #check if the user query is present or not
     if query:
-        textPart = query
+        formatted_query = [ f"role: {message['role']}, content: {message['content']}" for message in query]
+        formatted_string = "\n".join(formatted_query)
+        textPart = formatted_string
     else:
         #re initialize the config to get the response in json format as the user query is not present
-        config = vgenai.GenerationConfig(max_output_tokens=1024, temperature=0.6, response_mime_type='application/json')
+        config = vgenai.GenerationConfig(max_output_tokens=512, temperature=0.6, response_mime_type='application/json')
 
         #system prompt to be used when the user query is not present for video description
         textPart = """
@@ -147,8 +155,13 @@ def video(req: https_fn.CallableRequest):
             "Description": "A video showing a narrow mountain hiking trail with steep cliffs on one side. The trail is rugged and uneven, with loose rocks and a steep drop-off. Hikers are seen carefully navigating the path, using trekking poles for stability. The lack of guardrails and the proximity to the cliff edge make it very dangerous for visually impaired individuals."
         }
         """
+    print(textPart)
+    model_response = model.generate_content([textPart, filePart], generation_config=config)
+    response_content = model_response.candidates[0].content.parts[0].text
+    print(response_content) # Print the response text
     
-    response = model.generate_content([textPart, filePart], generation_config=config)  # Generate content using the model
-    print(response.candidates[0].content.parts[0].text)
-    response_dict = json.loads(response.candidates[0].content.parts[0].text) # Convert the response text to a json object
-    return response_dict # Return the response json object
+    if config.to_dict()['response_mime_type'] == 'application/json':
+        response = json.loads(response_content)  # Convert the response text to a json object
+    else:
+        response = {"Description": response_content}
+    return response # Return the response json object
