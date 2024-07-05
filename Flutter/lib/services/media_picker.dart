@@ -12,7 +12,7 @@ class MediaPicker {
 
   // Pick image or video from gallery
   // by taking the choice and parameters from the user
-  Future<File?> pickMedia(BuildContext context, AppState appState) async {
+  Future<File> pickMedia(BuildContext context, AppState appState) async {
     //dialog to give the user an option
     //to select between an image or a video from the gallery
     final choice = await showDialog<String>(
@@ -66,15 +66,14 @@ class MediaPicker {
         return File(pickedFile.path);
       } else {
         developer.log("No file selected");
-        return null;
+        throw Exception("No file selected");
       }
     } else {
       developer.log("No choice selected");
-      return null;
-    }
+      throw Exception("No choice selected");}
   }
 
-  Future<File?> getImageCM(BuildContext context, AppState appState) async {
+  Future<File> getImageCM(BuildContext context, AppState appState) async {
     final cameras = await availableCameras();
     final rearCamera = cameras.firstWhere(
         (camera) => camera.lensDirection == CameraLensDirection.back);
@@ -94,11 +93,11 @@ class MediaPicker {
     if (pickedFile != null) {
       return File(pickedFile.path);
     }
-    return null;
+    throw Exception("No image captured");
   }
 
 //function for getting a video from the Camera by taking the required parameters.
-  Future<File?> getVideoFile(BuildContext context, AppState appState) async {
+  Future<File> getVideoFile(BuildContext context, AppState appState) async {
     final cameras = await availableCameras();
     final rearCamera = cameras.firstWhere(
         (camera) => camera.lensDirection == CameraLensDirection.back);
@@ -119,7 +118,7 @@ class MediaPicker {
       return File(pickedFile.path);
     } else {
       developer.log("No video captured");
-      return null;
+      throw Exception("No video captured");
     }
   }
 }

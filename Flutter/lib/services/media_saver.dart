@@ -25,18 +25,14 @@ class MediaSaver {
   }
 
   Future<Map<String, String>> saveImage(
-      File? imageFile, String? mimeType) async {
+      File imageFile, String? mimeType) async {
     final appDir = await _getAppDirectory();
-    if (imageFile == null) {
-      developer.log('No image file');
-      return {'path': '', 'id': ''};
-    }
 
     final fileName = path.basename(imageFile.path);
 
     if (mimeType == null) {
       developer.log('Unsupported file format');
-      return {'path': '', 'id': ''};
+      throw Exception('Unsupported file format');
     }
 
     final filePath = '$appDir/images/';
@@ -47,18 +43,14 @@ class MediaSaver {
     return {'path': newFilePath, 'id': id.toString()};
   }
 
-  Future<Map<String, dynamic>> saveVideo(
-      File? videoFile, String? mimeType) async {
+  Future<Map<String, String>> saveVideo(
+      File videoFile, String? mimeType) async {
     final appDir = await _getAppDirectory();
-    if (videoFile == null) {
-      developer.log('No video file');
-      return {'path': '', 'id': ''};
-    }
 
     final filename = path.basename(videoFile.path);
     if (mimeType == null) {
       developer.log('Unsupported file format');
-      return {'path': '', 'id': ''};
+      throw Exception('Unsupported file format');
     }
 
     final filePath = '$appDir/videos/';
@@ -66,6 +58,6 @@ class MediaSaver {
     await videoFile.copy(newFilePath);
 
     final id = await dbHelper.insertMedia(0, mimeType, newFilePath);
-    return {'path': newFilePath, 'id': id};
+    return {'path': newFilePath, 'id': id.toString()};
   }
 }

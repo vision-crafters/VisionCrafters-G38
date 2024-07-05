@@ -42,6 +42,8 @@ class _HomePageState extends State<HomePage> {
   final MediaPicker _mediaPicker = MediaPicker();
   final MediaSaver _mediaSaver = MediaSaver();
   final MediaUploader _mediaUploader = MediaUploader();
+  late File fileName;
+  late String? mimeType;
 
   @override
   void initState() {
@@ -78,74 +80,64 @@ class _HomePageState extends State<HomePage> {
       developer.log('Message sent to database: $message');
       _controller.clear();
       addMessage(id, 'user', message, '', '', 'message');
+      final response = await _mediaUploader.uploadQuery(
+          messages, fileName, mimeType, message);
+      final id2 =
+          await dbHelper.insertMessage(0, 'assistant', response['Description']);
+      addMessage(id2, 'assistant', response['Description'], '', '', 'message');
     }
   }
 
   Future<void> getMedia(BuildContext context, AppState appState) async {
-    File? mediaFileName = await _mediaPicker.pickMedia(context, appState);
+    Map<String, dynamic> upload = {};
+    fileName = await _mediaPicker.pickMedia(context, appState);
+    mimeType = lookupMimeType(fileName.path);
+    if (mimeType != null && mimeType!.startsWith('image')) {
+      final image = await _mediaSaver.saveImage(fileName, mimeType);
+      addMessage(image['id'], 'user', '', mimeType, image['path'], 'media');
 
-    if (mediaFileName != null) {
-      final mimeType = lookupMimeType(mediaFileName.path);
-      if (mimeType != null && mimeType.startsWith('image')) {
-        final image = await _mediaSaver.saveImage(mediaFileName, mimeType);
-        addMessage(image['id'], 'user', '', mimeType, image['path'], 'media');
+      upload = await _mediaUploader.uploadImage(fileName, mimeType, appState);
+    } else if (mimeType != null && mimeType!.startsWith('video')) {
+      final video = await _mediaSaver.saveVideo(fileName, mimeType);
+      addMessage(
+          video['id'].toString(), 'user', '', mimeType, video['path'], 'media');
 
-        Map<String, dynamic> upload =
-            await _mediaUploader.uploadImage(mediaFileName, mimeType, appState);
-        final id =
-            await dbHelper.insertMessage(0, "assistant", upload['Description']);
-        addMessage(id.toString(), 'assistant', upload['Description'], '', '',
-            'message');
-
-      } else if (mimeType != null && mimeType.startsWith('video')) {
-        final video = await _mediaSaver.saveVideo(mediaFileName, mimeType);
-        addMessage(video['id'].toString(), 'user', '', mimeType, video['path'],
-            'media');
-
-        Map<String, dynamic> upload =
-            await _mediaUploader.uploadVideo(mediaFileName, mimeType, appState);
-        final id =
-            await dbHelper.insertMessage(0, "assistant", upload['Description']);
-        addMessage(id.toString(), 'assistant', upload['Description'], '', '',
-            'message');
-      } else {
-        developer.log("Unsupported file type");
-      }
+      upload = await _mediaUploader.uploadVideo(fileName, mimeType, appState);
     }
+    final id =
+        await dbHelper.insertMessage(0, "assistant", upload['Description']);
+    addMessage(
+        id.toString(), 'assistant', upload['Description'], '', '', 'message');
   }
 
   Future<void> getVideo(BuildContext context, AppState appState) async {
-    File? videoFile = await _mediaPicker.getVideoFile(context, appState);
-    if (videoFile != null) {
-      final mimeType = lookupMimeType(videoFile.path);
-      final path = await _mediaSaver.saveVideo(videoFile, mimeType);
-      addMessage(
-          path['id'].toString(), 'user', '', mimeType, path['path'], 'media');
+    fileName = await _mediaPicker.getVideoFile(context, appState);
+    mimeType = lookupMimeType(fileName.path);
+    final path = await _mediaSaver.saveVideo(fileName, mimeType);
+    addMessage(
+        path['id'].toString(), 'user', '', mimeType, path['path'], 'media');
 
-      Map<String, dynamic> upload =
-          await _mediaUploader.uploadVideo(videoFile, mimeType, appState);
-      final id =
-          await dbHelper.insertMessage(0, "assistant", upload['Description']);
-      addMessage(
-          id.toString(), 'assistant', upload['Description'], '', '', 'message');
-    }
+    Map<String, dynamic> upload =
+        await _mediaUploader.uploadVideo(fileName, mimeType, appState);
+    final id =
+        await dbHelper.insertMessage(0, "assistant", upload['Description']);
+    addMessage(
+        id.toString(), 'assistant', upload['Description'], '', '', 'message');
   }
 
   Future<void> getImage(BuildContext context, AppState appState) async {
-    File? imageFile = await _mediaPicker.getImageCM(context, appState);
-    if (imageFile != null) {
-      final mimeType = lookupMimeType(imageFile.path);
-      final path = await _mediaSaver.saveImage(imageFile, mimeType);
-      addMessage(
-          path['id'].toString(), 'user', '', mimeType, path['path'], 'media');
-          
-      Map<String, dynamic> upload =
-          await _mediaUploader.uploadImage(imageFile, mimeType, appState);
-      final id =
-          await dbHelper.insertMessage(0, "assistant", upload['Description']);
-      addMessage(
-          id.toString(), 'assistant', upload['Description'], '', '', 'message');
-    }
+    fileName = await _mediaPicker.getImageCM(context, appState);
+    mimeType = lookupMimeType(fileName.path);
+    final path = await _mediaSaver.saveImage(fileName, mimeType);
+    addMessage(
+        path['id'].toString(), 'user', '', mimeType, path['path'], 'media');
+
+    Map<String, dynamic> upload =
+        await _mediaUploader.uploadImage(fileName, mimeType, appState);
+    final id =
+        await dbHelper.insertMessage(0, "assistant", upload['Description']);
+    addMessage(
+        id.toString(), 'assistant', upload['Description'], '', '', 'message');
   }
 
   Future<void> addMessage(final id, final role, final content, final mimeType,
@@ -158,7 +150,7 @@ class _HomePageState extends State<HomePage> {
         'content': content,
         'mime_type': mimeType,
         'path': path,
-        'timestamp': DateTime.now().millisecondsSinceEpoch,
+        'timestamp': DateTime.now(),
         'type': type,
       });
     });

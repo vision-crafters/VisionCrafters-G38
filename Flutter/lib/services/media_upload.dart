@@ -5,13 +5,14 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:uuid/uuid.dart';
 import '../providers/app_state.dart';
+import '../utils/chat_utils.dart';
 
 class MediaUploader {
+  final storageRef = FirebaseStorage.instance.ref();
+
   //function with parameters, used for uploading images
   Future<Map<String, dynamic>> uploadImage(
-      File? imageFile, String? mimeType, AppState appState) async {
-    if (imageFile == null) return {'path': '', 'id': ""};
-
+      File imageFile, String? mimeType, AppState appState) async {
     appState.setSpinnerVisibility(
         true); //before uploading the spinner will be turned on.
 
@@ -21,13 +22,6 @@ class MediaUploader {
     final base64Image =
         base64Encode(bytes); //converts the bytes into a Base64-encoded string
     //represent binary data as text
-
-    if (mimeType == null) {
-      developer.log('Unsupported file format');
-      appState.setSpinnerVisibility(
-          false); //if it is an unsupported file format the spinner will be turned off.
-      return {'path': '', 'id': ""};
-    }
 
     //This is an instance of the Firebase
     // Firebase Cloud Function with the name 'image' that is being called.
@@ -50,9 +44,9 @@ class MediaUploader {
           false); //After the description is displayed onscreen, the showspinner will be turned off.
       return data;
     } else {
-      developer.log("Failed to upload");
+      developer.log("Failed to upload image.");
       appState.setSpinnerVisibility(false);
-      return {'path': '', 'id': ""};
+      throw Exception('Failed to upload image.');
     }
   }
 
@@ -63,8 +57,6 @@ class MediaUploader {
     appState.setSpinnerVisibility(
         true); //before uploading the spinner will be turned on.
 
-    final storageRef =
-        FirebaseStorage.instance.ref(); //storageRef for the firebase storage
     final uniqueId = const Uuid().v1(); //uniqueId for the video file
     final fileRef =
         storageRef.child('$uniqueId.mp4'); //fileRef for the video file
@@ -87,11 +79,63 @@ class MediaUploader {
       'mime_type': mimeType,
     });
 
-    final data = response.data;
-    developer.log(data
-        .toString()); //this will be displayed on the debug console for verification purposes.
-    appState.setSpinnerVisibility(
-        false); //After the description is displayed onscreen, the showspinner will be turned off.
-    return data;
+    if (response.data != null) {
+      final data = response.data;
+      developer.log(data
+          .toString()); //this will be displayed on the debug console for verification purposes.
+      appState.setSpinnerVisibility(
+          false); //After the description is displayed onscreen, the showspinner will be turned off.
+      return data;
+    } else {
+      developer.log("Failed to upload video.");
+      appState.setSpinnerVisibility(false);
+      throw Exception('Failed to upload video.');
+    }
+  }
+
+  Future<dynamic> uploadQuery(List<Map<String, dynamic>> messages, File file,
+      String? mimeType, String query) async {
+    List<Map<String, dynamic>> conversation = getChatHistory(messages);
+    developer.log(conversation.toString());
+    if (mimeType != null && mimeType.startsWith('image')) {
+      final bytes = await file.readAsBytes();
+      final base64Image = base64Encode(bytes);
+      final response =
+          await FirebaseFunctions.instance.httpsCallable('image').call({
+        'data': base64Image,
+        'mime_type': mimeType,
+        'query': conversation,
+      });
+      if (response.data != null) {
+        final data = response.data;
+        developer.log(data.toString());
+        return data;
+      } else {
+        developer.log("Failed to upload query for image .");
+        throw Exception('Failed to upload query for image.');
+      }
+    } else if (mimeType != null && mimeType.startsWith('video')) {
+      final uniqueId = const Uuid().v1();
+      final fileRef = storageRef.child('$uniqueId.mp4');
+      await fileRef.putFile(file);
+      final videoUrl = await fileRef.getDownloadURL();
+      final response =
+          await FirebaseFunctions.instance.httpsCallable('video').call({
+        'data': videoUrl,
+        'mime_type': mimeType,
+        'query': conversation,
+      });
+      if (response.data != null) {
+        final data = response.data;
+        developer.log(data.toString());
+        return data;
+      } else {
+        developer.log("Failed to upload query for video.");
+        throw Exception('Failed to upload query for video.');
+      }
+    } else{
+      developer.log('Unsupported file format');
+      throw Exception('Unsupported file format');
+    }
   }
 }
