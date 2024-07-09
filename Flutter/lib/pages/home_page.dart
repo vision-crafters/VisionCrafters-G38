@@ -42,12 +42,17 @@ class _HomePageState extends State<HomePage> {
   final MediaPicker _mediaPicker = MediaPicker();
   final MediaSaver _mediaSaver = MediaSaver();
   final MediaUploader _mediaUploader = MediaUploader();
+  int conversationId = -1;
+  bool flag = true;
 
   @override
   void initState() {
     super.initState();
     _focusNode.addListener(_onFocusChange);
-    _loadMessages();
+    if (conversationId != -1) {
+      _loadMessages();
+      flag = false;
+    }
   }
 
   @override
@@ -65,7 +70,8 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _loadMessages() async {
-    List<Map<String, dynamic>> data = await dbHelper.getConversationData(0);
+    List<Map<String, dynamic>> data =
+        await dbHelper.getConversationData(conversationId);
     messages = List<Map<String, dynamic>>.from(data);
     developer.log(messages.toString());
     setState(() {});
@@ -74,7 +80,7 @@ class _HomePageState extends State<HomePage> {
   void _sendMessage() async {
     String message = _controller.text.trim();
     if (message.isNotEmpty) {
-      final id = await dbHelper.insertMessage(0, 'user', message);
+      final id = await dbHelper.insertMessage(conversationId, 'user', message);
       developer.log('Message sent to database: $message');
       _controller.clear();
       addMessage(id, 'user', message, '', '', 'message');
@@ -83,31 +89,39 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> getMedia(BuildContext context, AppState appState) async {
     File? mediaFileName = await _mediaPicker.pickMedia(context, appState);
+    conversationId = await dbHelper.insertConversation();
 
     if (mediaFileName != null) {
       final mimeType = lookupMimeType(mediaFileName.path);
       if (mimeType != null && mimeType.startsWith('image')) {
-        final image = await _mediaSaver.saveImage(mediaFileName, mimeType);
+        final image = await _mediaSaver.saveImage(
+            mediaFileName, mimeType, conversationId);
         addMessage(image['id'], 'user', '', mimeType, image['path'], 'media');
 
         Map<String, dynamic> upload =
             await _mediaUploader.uploadImage(mediaFileName, mimeType, appState);
-        final id =
-            await dbHelper.insertMessage(0, "assistant", upload['Description']);
+        final id = await dbHelper.insertMessage(
+            conversationId, "assistant", upload['Description']);
         addMessage(id.toString(), 'assistant', upload['Description'], '', '',
             'message');
-
+        if (flag) {
+          dbHelper.updateConversationWithId(upload['Title'], conversationId);
+        }
       } else if (mimeType != null && mimeType.startsWith('video')) {
-        final video = await _mediaSaver.saveVideo(mediaFileName, mimeType);
+        final video = await _mediaSaver.saveVideo(
+            mediaFileName, mimeType, conversationId);
         addMessage(video['id'].toString(), 'user', '', mimeType, video['path'],
             'media');
 
         Map<String, dynamic> upload =
             await _mediaUploader.uploadVideo(mediaFileName, mimeType, appState);
-        final id =
-            await dbHelper.insertMessage(0, "assistant", upload['Description']);
+        final id = await dbHelper.insertMessage(
+            conversationId, "assistant", upload['Description']);
         addMessage(id.toString(), 'assistant', upload['Description'], '', '',
             'message');
+        if (flag) {
+          dbHelper.updateConversationWithId(upload['Title'], conversationId);
+        }
       } else {
         developer.log("Unsupported file type");
       }
@@ -118,16 +132,20 @@ class _HomePageState extends State<HomePage> {
     File? videoFile = await _mediaPicker.getVideoFile(context, appState);
     if (videoFile != null) {
       final mimeType = lookupMimeType(videoFile.path);
-      final path = await _mediaSaver.saveVideo(videoFile, mimeType);
+      final path =
+          await _mediaSaver.saveVideo(videoFile, mimeType, conversationId);
       addMessage(
           path['id'].toString(), 'user', '', mimeType, path['path'], 'media');
 
       Map<String, dynamic> upload =
           await _mediaUploader.uploadVideo(videoFile, mimeType, appState);
-      final id =
-          await dbHelper.insertMessage(0, "assistant", upload['Description']);
+      final id = await dbHelper.insertMessage(
+          conversationId, "assistant", upload['Description']);
       addMessage(
           id.toString(), 'assistant', upload['Description'], '', '', 'message');
+      if (flag) {
+        dbHelper.updateConversationWithId(upload['Title'], conversationId);
+      }
     }
   }
 
@@ -135,16 +153,20 @@ class _HomePageState extends State<HomePage> {
     File? imageFile = await _mediaPicker.getImageCM(context, appState);
     if (imageFile != null) {
       final mimeType = lookupMimeType(imageFile.path);
-      final path = await _mediaSaver.saveImage(imageFile, mimeType);
+      final path =
+          await _mediaSaver.saveImage(imageFile, mimeType, conversationId);
       addMessage(
           path['id'].toString(), 'user', '', mimeType, path['path'], 'media');
-          
+
       Map<String, dynamic> upload =
           await _mediaUploader.uploadImage(imageFile, mimeType, appState);
-      final id =
-          await dbHelper.insertMessage(0, "assistant", upload['Description']);
+      final id = await dbHelper.insertMessage(
+          conversationId, "assistant", upload['Description']);
       addMessage(
           id.toString(), 'assistant', upload['Description'], '', '', 'message');
+      if (flag) {
+        dbHelper.updateConversationWithId(upload['Title'], conversationId);
+      }
     }
   }
 
@@ -184,6 +206,19 @@ class _HomePageState extends State<HomePage> {
           title: const Text("Vision Crafters"),
           actions: [
             IconButton(
+              icon: const Icon(Icons.chat_bubble_outline_rounded),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => HomePage(
+                      database: widget.database,
+                    ),
+                  ),
+                );
+              },
+            ),
+            IconButton(
               icon: const Icon(Icons.settings),
               onPressed: () {
                 //Function to be executed when the settings button is pressed
@@ -195,6 +230,7 @@ class _HomePageState extends State<HomePage> {
                 );
               },
             ),
+            const Padding(padding: EdgeInsets.only(right: 10.0)),
           ],
         ),
         drawer: Drawer(
