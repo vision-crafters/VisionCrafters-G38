@@ -8,26 +8,36 @@ import 'dart:convert';
 import 'package:mime/mime.dart';
 import 'app_state.dart'; // Import the AppState class
 
-// bool showSpinner = false;
-
 Future<void> pickMedia(BuildContext context, Function(String) addDescription,
     AppState appState) async {
-  final ImagePicker _pickerGal = ImagePicker();
+  // Pick image or video from gallery
+// by taking the choice and parameters from the user
+  final ImagePicker pickerGal =
+      ImagePicker(); // Pick image or video from gallery
   final choice = await showDialog<String>(
+    //dialog to give the user an option
+    //to select between an image or a video from the gallery
     context: context,
     builder: (BuildContext context) {
+      // builder for the dialog
       return AlertDialog(
+        // dialog box
         title: const Text('Choose Media Type'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             ListTile(
+              //
               title: const Text('Image'),
-              onTap: () => Navigator.pop(context, 'image'),
+              onTap: () =>
+                  Navigator.pop(context, 'image'), // option to select image
+              //will open the gallery to select images by the user
             ),
             ListTile(
               title: const Text('Video'),
-              onTap: () => Navigator.pop(context, 'video'),
+              onTap: () =>
+                  Navigator.pop(context, 'video'), // option to select video
+              //will open the gallery to select videos by the user
             ),
           ],
         ),
@@ -36,33 +46,52 @@ Future<void> pickMedia(BuildContext context, Function(String) addDescription,
   );
 
   if (choice != null) {
-    XFile? pickedFile;
+    // if choice is not null
+    XFile? pickedFile; //XFile for the selected image or video
     if (choice == 'image') {
-      pickedFile = await _pickerGal.pickImage(
-        source: ImageSource.gallery,
+      pickedFile = await pickerGal.pickImage(
+        // will open the gallery to select
+        //images by the user
+        source: ImageSource
+            .gallery, // will open the gallery to select images by the user
         imageQuality: 100,
         maxHeight: 1080,
         maxWidth: 1920,
       );
     } else if (choice == 'video') {
-      pickedFile = await _pickerGal.pickVideo(source: ImageSource.gallery);
+      // will open the gallery to select videos by the user
+      pickedFile = await pickerGal.pickVideo(source: ImageSource.gallery);
+      // will open the gallery to select videos by the user
     }
 
     if (pickedFile != null) {
+      // if pickedFile is not null
+
       final mimeType = lookupMimeType(pickedFile.path);
+      //mimeType for the selected image or video
 
       if (mimeType != null && mimeType.startsWith('video')) {
+        // if mimeType is not null and mimeType starts with 'video'
+
         appState.setSpinnerVisibility(true);
+        //before uploading, setting the spinner on...
 
         await uploadVideo(File(pickedFile.path), addDescription, appState);
+        //uploading the video to firebase storage, by taking required parameters and adding the description to the list
+        // of descriptions
 
         appState.setSpinnerVisibility(false);
+        //After uploading, setting the spinner off...
       } else if (mimeType != null && mimeType.startsWith('image')) {
         appState.setSpinnerVisibility(true);
+        //before uploading, setting the spinner on...
 
         await uploadImage(File(pickedFile.path), addDescription, appState);
+        //uploading the video to firebase storage, by taking required parameters and adding the description to the list
+        //of descriptions
 
         appState.setSpinnerVisibility(false);
+        //After uploading, setting the spinner off...
       } else {
         print("Unsupported file type");
       }
@@ -74,16 +103,20 @@ Future<void> pickMedia(BuildContext context, Function(String) addDescription,
 
 Future<void> getImageCM(BuildContext context, Function(String) addDescription,
     AppState appState) async {
-  final ImagePicker _pickerCam = ImagePicker();
-  final pickedFile_Camera = await _pickerCam.pickImage(
+  //function for getting an image from the Camera
+  //by taking the required parameters.
+  final ImagePicker pickerCam = ImagePicker();
+  final pickedFileCamera = await pickerCam.pickImage(
     source: ImageSource.camera,
     imageQuality: 100,
   );
 
-  if (pickedFile_Camera != null) {
-    File imageCam = File(pickedFile_Camera.path);
+  if (pickedFileCamera != null) {
+    //if the file is picked from the camera.
+    File imageCam = File(pickedFileCamera.path);
     appState.setSpinnerVisibility(true);
     await uploadImage(imageCam, addDescription, appState);
+    //it will be uploaded to the firebase storage
     appState.setSpinnerVisibility(false);
   } else {
     print("No image Captured");
@@ -92,104 +125,160 @@ Future<void> getImageCM(BuildContext context, Function(String) addDescription,
 
 Future<void> getVideoFile(BuildContext context, Function(String) addDescription,
     AppState appState) async {
-  final ImagePicker _pickerCam = ImagePicker();
+  //function for getting a video from the Camera
+  final ImagePicker pickerCam = ImagePicker();
   appState.setSpinnerVisibility(true);
-  final videoFile = await _pickerCam.pickVideo(source: ImageSource.camera);
+
+  final videoFile = await pickerCam.pickVideo(source: ImageSource.camera);
+  //will open camera to shoot a video, and that video file will be stored in the
+  //variable videoFile.
 
   if (videoFile != null) {
+    // if videoFile is not null
+
     final storageRef = FirebaseStorage.instance.ref();
-    final uniqueId = Uuid().v1();
+    //storageRef for the firebase storage
+    final uniqueId = const Uuid().v1();
+    //uniqueId for the video file
     final fileRef = storageRef.child('$uniqueId.mp4');
+    //fileRef for the video file
 
-    await fileRef.putFile(File(videoFile.path));
+    await fileRef.putFile(File(videoFile.path)); //putFile for the video file
+    //it will be uploaded to the firebase storage and stored in the fileRef
 
-    final videoUrl = await fileRef.getDownloadURL();
+    final videoUrl =
+        await fileRef.getDownloadURL(); //getDownloadURL for the video file
+    //it will be downloaded from the firebase storage and stored in the videoUrl
 
-    final response = await FirebaseFunctions.instance
-        .httpsCallable('video')
+    final response = await FirebaseFunctions
+        .instance //This is an instance of the Firebase
+        // Functions class, which allows us to interact with server-side functions deployed on Firebase
+        .httpsCallable(
+            'video') //call a server-side function deployed on Firebase using an HTTP request.
         .call({'data': videoUrl, 'mime_type': 'video/mp4'});
+    //Calling HTTP request to the server-side function with
+    //parameters, which is a map of data that we want to send along with the request.
 
-    final data = response.data;
+    final data = response.data; //Response is recieved and displayed on screen.
 
     final description_Video_camera =
         ('Danger: ${data["Danger"]}\nTitle: ${data["Title"]}\nDescription: ${data["Description"]}');
 
-    addDescription(description_Video_camera);
+    addDescription(
+        description_Video_camera); //the response will be added to the
+    // list of descriptions, which will be displayed on the screen.
 
     print(
         'Danger: ${data["Danger"]}\nTitle: ${data["Title"]}\nDescription: ${data["Description"]}');
   }
+  //this will be displayed on the debug console for verification purposes.
 
   appState.setSpinnerVisibility(false);
+  //After the description is displayed onscreen, the showspinner will be turned off.
 }
 
 Future<void> uploadImage(
-    File? imageFile, Function(String) addDescription, AppState appState) async {
-  // bool showSpinner = false;
-
+    //function with parameters, used for uploading videos from the gallery
+    File? imageFile,
+    Function(String) addDescription,
+    AppState appState) async {
   if (imageFile == null) return;
 
   appState.setSpinnerVisibility(true);
+  //before uploading the spinner will be turned on.
 
-  final bytes = await imageFile.readAsBytes();
-  final base64Image = base64Encode(bytes);
-  final mimeType = lookupMimeType(imageFile.path);
+  final bytes =
+      await imageFile.readAsBytes(); //reads the contents of the imageFile
+  //asynchronously and stores them in the bytes variable
+  final base64Image =
+      base64Encode(bytes); //converts the bytes into a Base64-encoded string
+  //represent binary data as text
+  final mimeType =
+      lookupMimeType(imageFile.path); //returns the MIME type of the file
 
   if (mimeType == null) {
     print('Unsupported file format');
     appState.setSpinnerVisibility(false);
+    //if it is an unsupported file format the spinner will be turned off.
     return;
   }
 
-  final response = await FirebaseFunctions.instance
-      .httpsCallable('image')
+  final response = await FirebaseFunctions
+      .instance //This is an instance of the Firebase
+      .httpsCallable(
+          'image') // Firebase Cloud Function with the name 'image' that is being called.
       .call(<String, dynamic>{
-    'data': base64Image,
-    'mime_type': mimeType,
+    //invoke the Firebase Cloud Function with the provided data
+    'data':
+        base64Image, //passing a Map object containing two key-value pairs: 'data' and 'mime_type'
+    'mime_type':
+        mimeType, //'data' and 'mime_type' are the keys and their corresponding values are
+    //the Base64-encoded image and the MIME type of the image file, respectively.
   });
-
+//response is stored in the response variable
   if (response.data != null) {
     final description =
         'Danger: ${response.data["Danger"]}\nTitle: ${response.data["Title"]}\nDescription: ${response.data["Description"]}';
 
-    addDescription(description);
+    addDescription(description); //the response will be added to the
+    // list of descriptions, which will be displayed on the screen.
 
     print(description);
     final data = response.data;
     print(data);
     print(
         'Danger: ${data["Danger"]}\nTitle: ${data["Title"]}\nDescription: ${data["Description"]}');
-  } else {
+  } //Response is also displayed on the debug console for the verification purposes.
+  else {
     print("Failed to upload");
     appState.setSpinnerVisibility(false);
+    //After the description is displayed onscreen, the showspinner will be turned off.
   }
 
   appState.setSpinnerVisibility(false);
+  //After the description is displayed onscreen, the showspinner will be turned off.
 }
 
 Future<void> uploadVideo(
-    File videoFile, Function(String) addDescription, AppState appState) async {
+    //This function is used to upload videos from the gallery
+    File videoFile,
+    Function(String) addDescription,
+    AppState appState) async {
   final storageRef = FirebaseStorage.instance.ref();
-  final uniqueId = Uuid().v1();
+  //storageRef for the firebase storage
+  final uniqueId = const Uuid().v1();
+  //uniqueId for the video file
   final fileRef = storageRef.child('$uniqueId.mp4');
+  //fileRef for the video file
+  await fileRef.putFile(videoFile); //uploads the video file to firebase storage
 
-  await fileRef.putFile(videoFile);
+  final videoUrl =
+      await fileRef.getDownloadURL(); //getDownloadURL for the video file
+  //it will be downloaded from the firebase storage and stored in the videoUrl
 
-  final videoUrl = await fileRef.getDownloadURL();
-
-  final response = await FirebaseFunctions.instance
-      .httpsCallable('video')
+  final response = await FirebaseFunctions
+      .instance //This is an instance of the Firebase
+      // Functions class, which allows us to interact with server-side functions deployed on Firebase
+      .httpsCallable(
+          'video') //call a server-side function deployed on Firebase using an HTTP request.
       .call({'data': videoUrl, 'mime_type': 'video/mp4'});
+  //Calling HTTP request to the server-side function with
+  //parameters, which is a map of data that we want to send along with the request.
 
-  final data = response.data;
+  final data =
+      response.data; //Response is recieved and displayed on Home screen.
 
-  final description_Vid =
+  final descriptionVid =
       ('Danger: ${data["Danger"]}\nTitle: ${data["Title"]}\nDescription: ${data["Description"]}');
+  //The response is stored in the descriptionVid variable
 
-  addDescription(description_Vid);
+  addDescription(descriptionVid); //the response will be added to the
+  // list of descriptions, which will be displayed on the screen.
 
   print(
       'Danger: ${data["Danger"]}\nTitle: ${data["Title"]}\nDescription: ${data["Description"]}');
+  //this will be displayed on the debug console for verification purposes.
 
   appState.setSpinnerVisibility(false);
+  //After the description is displayed onscreen, the showspinner will be turned off.
 }
