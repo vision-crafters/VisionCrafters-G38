@@ -1,3 +1,4 @@
+import 'dart:async'; // Add this import for the Timer
 import 'dart:io';
 import 'package:mime/mime.dart';
 import 'package:flutter/material.dart';
@@ -18,23 +19,18 @@ import 'package:flutterbasics/services/media_upload.dart';
 import 'package:flutterbasics/providers/app_state.dart';
 import 'dart:developer' as developer;
 
-//A stateful widget that maintains the state of the home page.
 class HomePage extends StatefulWidget {
   final Database database;
 
-  const HomePage(
-      {super.key,
-      required this.database}); //constructor for the HomePage widget
+  const HomePage({super.key, required this.database});
 
   @override
-  State<HomePage> createState() =>
-      _HomePageState(); //Creates the state of the widget
+  State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
   final DatabaseHelper dbHelper = DatabaseHelper.instance;
-  bool showSpinner =
-      false; //Boolean to control the display of a loading spinner.
+  bool showSpinner = false;
   bool _isFocused = false;
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
@@ -44,11 +40,13 @@ class _HomePageState extends State<HomePage> {
   final MediaUploader _mediaUploader = MediaUploader();
   int conversationId = -1;
   bool flag = true;
+  Timer? _timer;
 
   @override
   void initState() {
     super.initState();
     _focusNode.addListener(_onFocusChange);
+    _startTimer();
     if (conversationId != -1) {
       _loadMessages();
       flag = false;
@@ -60,12 +58,19 @@ class _HomePageState extends State<HomePage> {
     _focusNode.removeListener(_onFocusChange);
     _focusNode.dispose();
     _controller.dispose();
+    _timer?.cancel();
     super.dispose();
   }
 
   void _onFocusChange() {
     setState(() {
       _isFocused = _focusNode.hasFocus;
+    });
+  }
+
+  void _startTimer() {
+    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
+      setState(() {}); // This will refresh the state periodically
     });
   }
 
@@ -89,7 +94,9 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> getMedia(BuildContext context, AppState appState) async {
     File? mediaFileName = await _mediaPicker.pickMedia(context, appState);
-    conversationId = await dbHelper.insertConversation();
+    if (flag) {
+      conversationId = await dbHelper.insertConversation();
+    }
 
     if (mediaFileName != null) {
       final mimeType = lookupMimeType(mediaFileName.path);
@@ -121,6 +128,7 @@ class _HomePageState extends State<HomePage> {
             'message');
         if (flag) {
           dbHelper.updateConversationWithId(upload['Title'], conversationId);
+          flag = false;
         }
       } else {
         developer.log("Unsupported file type");
@@ -130,6 +138,9 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> getVideo(BuildContext context, AppState appState) async {
     File? videoFile = await _mediaPicker.getVideoFile(context, appState);
+    if (flag) {
+      conversationId = await dbHelper.insertConversation();
+    }
     if (videoFile != null) {
       final mimeType = lookupMimeType(videoFile.path);
       final path =
@@ -145,12 +156,16 @@ class _HomePageState extends State<HomePage> {
           id.toString(), 'assistant', upload['Description'], '', '', 'message');
       if (flag) {
         dbHelper.updateConversationWithId(upload['Title'], conversationId);
+        flag = false;
       }
     }
   }
 
   Future<void> getImage(BuildContext context, AppState appState) async {
     File? imageFile = await _mediaPicker.getImageCM(context, appState);
+    if (flag) {
+      conversationId = await dbHelper.insertConversation();
+    }
     if (imageFile != null) {
       final mimeType = lookupMimeType(imageFile.path);
       final path =
@@ -166,6 +181,7 @@ class _HomePageState extends State<HomePage> {
           id.toString(), 'assistant', upload['Description'], '', '', 'message');
       if (flag) {
         dbHelper.updateConversationWithId(upload['Title'], conversationId);
+        flag = false;
       }
     }
   }
@@ -188,12 +204,14 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    //Builds the UI of the home page
     final appState = Provider.of<AppState>(context);
     return GestureDetector(
+      onTap: () {
+        FocusScope.of(context).unfocus();
+      },
       onDoubleTap: () {
         getImage(context, appState);
-      }, //Double tap gesture to open the camera
+      },
       onLongPress: () {
         showDialog(
           context: context,
@@ -202,31 +220,26 @@ class _HomePageState extends State<HomePage> {
       },
       child: Scaffold(
         appBar: AppBar(
-          //Displays the title and a settings button.
           title: const Text("Vision Crafters"),
           actions: [
             IconButton(
-              icon: const Icon(Icons.chat_bubble_outline_rounded),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => HomePage(
-                      database: widget.database,
+                icon: const Icon(Icons.chat_bubble_outline_rounded),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => HomePage(
+                        database: widget.database,
+                      ),
                     ),
-                  ),
-                );
-              },
-            ),
+                  );
+                }),
             IconButton(
               icon: const Icon(Icons.settings),
               onPressed: () {
-                //Function to be executed when the settings button is pressed
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                      builder: (context) =>
-                          const SettingsPage()), //Navigates to the settings page
+                  MaterialPageRoute(builder: (context) => const SettingsPage()),
                 );
               },
             ),
@@ -234,16 +247,13 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
         drawer: Drawer(
-          //Provides a navigation drawer
           width: MediaQuery.of(context).size.width * 0.8,
-          child: DashBoardScreen(), //Displays the dashboard screen
+          child: DashBoardScreen(),
         ),
         body: ModalProgressHUD(
-          //Displays a loading spinner when appState.showSpinner is true
           inAsyncCall: appState.showSpinner,
           child: Column(
             children: [
-              //Displays the UI of the home page
               Expanded(
                 child: ListView.builder(
                   itemCount: messages.length,
@@ -276,60 +286,37 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               Container(
-                // Displays a floating action button
-                padding: const EdgeInsets.all(8.0), // Padding around the button
+                padding: const EdgeInsets.all(8.0),
                 child: Row(
-                  //Contains a speed dial for image/video picking,a text
-                  //input field, and a microphone button for speech-to-text
                   children: [
                     FloatingActionButton(
-                      //Displays a speed dial for image/video picking
                       shape: const CircleBorder(),
-                      heroTag: "UniqueTag2", //Unique identifier for the button
+                      heroTag: "UniqueTag2",
                       onPressed: () {},
                       child: SpeedDial(
-                        //Speed dial for image/video picking
-                        animatedIcon: AnimatedIcons
-                            .menu_close, //Animated icon for the button
-                        direction:
-                            SpeedDialDirection.up, //Direction of the speed dial
+                        animatedIcon: AnimatedIcons.menu_close,
+                        direction: SpeedDialDirection.up,
                         children: [
-                          //List of children for the speed dial
                           SpeedDialChild(
-                            //Child for the camera button
-                            shape: const CircleBorder(), //Shape of the button
-                            child:
-                                const Icon(Icons.camera), //Icon for the button
+                            shape: const CircleBorder(),
+                            child: const Icon(Icons.camera),
                             onTap: () => getImage(context, appState),
-                            //Function to be executed when the button is pressed
-                            //Calls the getImageCM function with the context,
-                            //addDescription, and appState as parameters
                           ),
                           SpeedDialChild(
-                            //Child for the video button
                             shape: const CircleBorder(),
                             child: const Icon(Icons.video_call),
                             onTap: () => getVideo(context, appState),
-                            // Function to be executed when the button is pressed
-                            //Calls the getVideoFile function with the context,
-                            //addDescription, and appState as parameters
                           ),
                           SpeedDialChild(
-                            //Child for the gallery button
                             shape: const CircleBorder(),
                             child: const Icon(Icons.browse_gallery_sharp),
                             onTap: () => getMedia(context, appState),
-                            //Function to be executed when the button is pressed
-                            //Calls the pickMedia function with the context,
-                            //addDescription, and appState as parameters
                           ),
                         ],
                       ),
                     ),
                     Expanded(
-                      //Expanded widget to expand the text input field
                       child: Padding(
-                        //Padding widget to add padding to the text input field
                         padding: const EdgeInsets.symmetric(horizontal: 8.0),
                         child: TextFormField(
                           controller: _controller,
@@ -344,31 +331,26 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                     FloatingActionButton(
-                      //Displays a microphone button for speech-to-text
                       onPressed: _isFocused
-                          ? _sendMessage
+                          ? () {
+                              _sendMessage();
+                              FocusScope.of(context).unfocus();
+                            }
                           : () {
                               showDialog(
-                                //Displays a dialog box for speech-to-text
-                                context: context, //Context for the dialog box
-                                builder: (context) =>
-                                    const Speech(), //Speech dialog box
-                                // will be opened up when the microphone button is pressed
+                                context: context,
+                                builder: (context) => const Speech(),
                               );
                             },
-                      child: Icon(_isFocused
-                          ? Icons.send
-                          : Icons.mic), // Icon for the microphone button
+                      child: Icon(_isFocused ? Icons.send : Icons.mic),
                     ),
-                  ], //end of children
+                  ],
                 ),
               ),
             ],
           ),
         ),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-        //This places the FAB at the center of the bottom of the screen, docked
-        //within the BottomAppBar.
       ),
     );
   }

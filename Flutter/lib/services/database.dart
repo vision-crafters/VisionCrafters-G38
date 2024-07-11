@@ -92,7 +92,7 @@ class DatabaseHelper {
 
   Future<int> insertConversation() async {
     Database db = await instance.database;
-    return await db.insert('Conversations', {});
+    return await db.insert('Conversations', {},nullColumnHack: 'title');
   }
 
 Future<int> updateConversationWithId(String title, int conversationId) async {
