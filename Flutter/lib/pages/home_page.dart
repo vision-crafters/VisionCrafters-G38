@@ -1,4 +1,6 @@
 import 'dart:io';
+
+import 'package:flutterbasics/services/flutter_tts.dart'; // for tts check in services folder
 import 'package:mime/mime.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -44,7 +46,8 @@ class _HomePageState extends State<HomePage> {
   final MediaUploader _mediaUploader = MediaUploader();
   late File fileName;
   late String? mimeType;
-
+  final TTSService _ttsService = TTSService();
+  
   @override
   void initState() {
     super.initState();
@@ -84,6 +87,7 @@ class _HomePageState extends State<HomePage> {
           messages, fileName, mimeType, message);
       final id2 =
           await dbHelper.insertMessage(0, 'assistant', response['Description']);
+      _ttsService.speak(response['Description']);
       addMessage(id2, 'assistant', response['Description'], '', '', 'message');
     }
   }
@@ -106,6 +110,7 @@ class _HomePageState extends State<HomePage> {
     }
     final id =
         await dbHelper.insertMessage(0, "assistant", upload['Description']);
+    _ttsService.speak(upload['Description']);
     addMessage(
         id.toString(), 'assistant', upload['Description'], '', '', 'message');
   }
@@ -121,6 +126,7 @@ class _HomePageState extends State<HomePage> {
         await _mediaUploader.uploadVideo(fileName, mimeType, appState);
     final id =
         await dbHelper.insertMessage(0, "assistant", upload['Description']);
+    _ttsService.speak(upload['Description']);
     addMessage(
         id.toString(), 'assistant', upload['Description'], '', '', 'message');
   }
@@ -136,6 +142,7 @@ class _HomePageState extends State<HomePage> {
         await _mediaUploader.uploadImage(fileName, mimeType, appState);
     final id =
         await dbHelper.insertMessage(0, "assistant", upload['Description']);
+    _ttsService.speak(upload['Description']);
     addMessage(
         id.toString(), 'assistant', upload['Description'], '', '', 'message');
   }
