@@ -44,7 +44,6 @@ class _HomePageState extends State<HomePage> {
   final TTSService _ttsService = TTSService();
   int conversationId = -1;
   bool flag = true;
-  Timer? _timer;
     final ScrollController _scrollController =
       ScrollController(); // Add this line
 
@@ -52,7 +51,6 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _focusNode.addListener(_onFocusChange);
-    _startTimer();
     if (conversationId != -1) {
       _loadMessages();
       flag = false;
@@ -64,7 +62,6 @@ class _HomePageState extends State<HomePage> {
     _focusNode.removeListener(_onFocusChange);
     _focusNode.dispose();
     _controller.dispose();
-    _timer?.cancel();
     _scrollController.dispose(); // Dispose the ScrollController
     super.dispose();
   }
@@ -72,12 +69,6 @@ class _HomePageState extends State<HomePage> {
   void _onFocusChange() {
     setState(() {
       _isFocused = _focusNode.hasFocus;
-    });
-  }
-
-  void _startTimer() {
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      setState(() {}); // This will refresh the state periodically
     });
   }
 
@@ -99,7 +90,7 @@ class _HomePageState extends State<HomePage> {
       final response = await _mediaUploader.uploadQuery(
           messages, fileName, mimeType, message);
       final id2 =
-          await dbHelper.insertMessage(0, 'assistant', response['Description']);
+          await dbHelper.insertMessage(conversationId, 'assistant', response['Description']);
       _ttsService.speak(response['Description']);
       addMessage(id2, 'assistant', response['Description'], '', '', 'message');
     }
@@ -170,7 +161,7 @@ class _HomePageState extends State<HomePage> {
     if (flag) {
       conversationId = await dbHelper.insertConversation();
     }
-      final mimeType = lookupMimeType(fileName.path);
+      mimeType = lookupMimeType(fileName.path);
       final path = await _mediaSaver.saveImage(fileName, mimeType, conversationId);
       addMessage(
           path['id'].toString(), 'user', '', mimeType, path['path'], 'media');
