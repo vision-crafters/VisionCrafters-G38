@@ -804,15 +804,7 @@ packages:
       sha256: b3d56ff4341b8f182b96aceb2fa20e3dcb336b9f867bc0eafc0de10f1048e957
       url: "https://pub.dev"
     source: hosted
-    version: "14.2.1"
-  volume_watcher:
-    dependency: "direct main"
-    description:
-      name: volume_watcher
-      sha256: "738f05c80dbda963cee4e9945291cd3c94229aa04c10da9386caef243deeac6f"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.0.1"
+    version: "13.0.0"
   web:
     dependency: transitive
     description:
