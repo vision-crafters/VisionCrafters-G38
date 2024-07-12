@@ -42,9 +42,11 @@ class _HomePageState extends State<HomePage> {
   late File fileName;
   late String? mimeType;
   final TTSService _ttsService = TTSService();
-    int conversationId = -1;
+  int conversationId = -1;
   bool flag = true;
   Timer? _timer;
+    final ScrollController _scrollController =
+      ScrollController(); // Add this line
 
   @override
   void initState() {
@@ -63,6 +65,7 @@ class _HomePageState extends State<HomePage> {
     _focusNode.dispose();
     _controller.dispose();
     _timer?.cancel();
+    _scrollController.dispose(); // Dispose the ScrollController
     super.dispose();
   }
 
@@ -100,6 +103,7 @@ class _HomePageState extends State<HomePage> {
       _ttsService.speak(response['Description']);
       addMessage(id2, 'assistant', response['Description'], '', '', 'message');
     }
+    _scrollToBottom(); // Scroll to the bottom after sending a message
   }
 
   Future<void> getMedia(BuildContext context, AppState appState) async {
@@ -115,10 +119,6 @@ class _HomePageState extends State<HomePage> {
       addMessage(image['id'], 'user', '', mimeType, image['path'], 'media');
 
         upload = await _mediaUploader.uploadImage(fileName, mimeType, appState);
-        final id =
-            await dbHelper.insertMessage(conversationId, "assistant", upload['Description']);
-        addMessage(id.toString(), 'assistant', upload['Description'], '', '',
-            'message');
 
       } else if (mimeType != null && mimeType!.startsWith('video')) {
         final video = await _mediaSaver.saveVideo(fileName, mimeType, conversationId);
@@ -136,6 +136,7 @@ class _HomePageState extends State<HomePage> {
           flag = false;
         }
         _ttsService.speak(upload['Description']);
+        _scrollToBottom(); // Scroll to the bottom after sending a message
   }
 
   Future<void> getVideo(BuildContext context, AppState appState) async {
@@ -160,6 +161,7 @@ class _HomePageState extends State<HomePage> {
         dbHelper.updateConversationWithId(upload['Title'], conversationId);
         flag = false;
       }
+      _scrollToBottom();
     }
 
 
@@ -185,8 +187,8 @@ class _HomePageState extends State<HomePage> {
         dbHelper.updateConversationWithId(upload['Title'], conversationId);
         flag = false;
       }
+      _scrollToBottom(); // Scroll to the bottom after sending a message
     }
-
 
   Future<void> addMessage(final id, final role, final content, final mimeType,
       final path, final type) async {
@@ -201,6 +203,17 @@ class _HomePageState extends State<HomePage> {
         'timestamp': DateTime.now(),
         'type': type,
       });
+    });
+    _scrollToBottom(); // Scroll to the bottom after sending a message
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
     });
   }
 
@@ -253,11 +266,14 @@ class _HomePageState extends State<HomePage> {
           child: DashBoardScreen(),
         ),
         body: ModalProgressHUD(
+          // Displays a loading spinner when appState.showSpinner is true
           inAsyncCall: appState.showSpinner,
           child: Column(
             children: [
               Expanded(
                 child: ListView.builder(
+                  
+                  controller: _scrollController, // Attach ScrollController
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
                     final message = messages[index];
