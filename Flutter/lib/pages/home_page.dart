@@ -1,4 +1,6 @@
 import 'dart:io';
+
+import 'package:flutterbasics/services/flutter_tts.dart'; // for tts check in services folder
 import 'package:mime/mime.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -44,6 +46,9 @@ class _HomePageState extends State<HomePage> {
   final MediaUploader _mediaUploader = MediaUploader();
   late File fileName;
   late String? mimeType;
+  final TTSService _ttsService = TTSService();
+    final ScrollController _scrollController =
+      ScrollController(); // Add this line
 
   @override
   void initState() {
@@ -57,6 +62,7 @@ class _HomePageState extends State<HomePage> {
     _focusNode.removeListener(_onFocusChange);
     _focusNode.dispose();
     _controller.dispose();
+    _scrollController.dispose(); // Dispose the ScrollController
     super.dispose();
   }
 
@@ -84,8 +90,10 @@ class _HomePageState extends State<HomePage> {
           messages, fileName, mimeType, message);
       final id2 =
           await dbHelper.insertMessage(0, 'assistant', response['Description']);
+      _ttsService.speak(response['Description']);
       addMessage(id2, 'assistant', response['Description'], '', '', 'message');
     }
+    _scrollToBottom(); // Scroll to the bottom after sending a message
   }
 
   Future<void> getMedia(BuildContext context, AppState appState) async {
@@ -106,8 +114,10 @@ class _HomePageState extends State<HomePage> {
     }
     final id =
         await dbHelper.insertMessage(0, "assistant", upload['Description']);
+    _ttsService.speak(upload['Description']);
     addMessage(
         id.toString(), 'assistant', upload['Description'], '', '', 'message');
+    _scrollToBottom(); // Scroll to the bottom after sending a message
   }
 
   Future<void> getVideo(BuildContext context, AppState appState) async {
@@ -121,23 +131,30 @@ class _HomePageState extends State<HomePage> {
         await _mediaUploader.uploadVideo(fileName, mimeType, appState);
     final id =
         await dbHelper.insertMessage(0, "assistant", upload['Description']);
+    _ttsService.speak(upload['Description']);
     addMessage(
         id.toString(), 'assistant', upload['Description'], '', '', 'message');
+    _scrollToBottom();
   }
 
   Future<void> getImage(BuildContext context, AppState appState) async {
     fileName = await _mediaPicker.getImageCM(context, appState);
+    _scrollToBottom();
     mimeType = lookupMimeType(fileName.path);
     final path = await _mediaSaver.saveImage(fileName, mimeType);
+    _scrollToBottom();
     addMessage(
         path['id'].toString(), 'user', '', mimeType, path['path'], 'media');
-
+    _scrollToBottom();
     Map<String, dynamic> upload =
         await _mediaUploader.uploadImage(fileName, mimeType, appState);
+    _scrollToBottom();
+
     final id =
         await dbHelper.insertMessage(0, "assistant", upload['Description']);
     addMessage(
         id.toString(), 'assistant', upload['Description'], '', '', 'message');
+    _scrollToBottom(); // Scroll to the bottom after sending a message
   }
 
   Future<void> addMessage(final id, final role, final content, final mimeType,
@@ -153,6 +170,17 @@ class _HomePageState extends State<HomePage> {
         'timestamp': DateTime.now(),
         'type': type,
       });
+    });
+    _scrollToBottom(); // Scroll to the bottom after sending a message
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
     });
   }
 
@@ -195,13 +223,15 @@ class _HomePageState extends State<HomePage> {
           child: DashBoardScreen(), //Displays the dashboard screen
         ),
         body: ModalProgressHUD(
-          //Displays a loading spinner when appState.showSpinner is true
+          // Displays a loading spinner when appState.showSpinner is true
           inAsyncCall: appState.showSpinner,
           child: Column(
             children: [
               //Displays the UI of the home page
               Expanded(
                 child: ListView.builder(
+                  
+                  controller: _scrollController, // Attach ScrollController
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
                     final message = messages[index];
