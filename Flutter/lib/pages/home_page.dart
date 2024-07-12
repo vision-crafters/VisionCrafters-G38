@@ -19,7 +19,7 @@ import 'package:flutterbasics/services/media_saver.dart';
 import 'package:flutterbasics/services/media_upload.dart';
 import 'package:flutterbasics/providers/app_state.dart';
 import 'dart:developer' as developer;
-
+import 'package:flutterbasics/services/beep_sound.dart';
 //A stateful widget that maintains the state of the home page.
 class HomePage extends StatefulWidget {
   final Database database;
@@ -48,6 +48,7 @@ class _HomePageState extends State<HomePage> {
   late String? mimeType;
   final TTSService _ttsService = TTSService();
   
+  final BeepSound _beep = BeepSound();
   @override
   void initState() {
     super.initState();
@@ -87,6 +88,7 @@ class _HomePageState extends State<HomePage> {
           messages, fileName, mimeType, message);
       final id2 =
           await dbHelper.insertMessage(0, 'assistant', response['Description']);
+      await _beep.makeDangerAlert(); // makes danger alert after every response
       _ttsService.speak(response['Description']);
       addMessage(id2, 'assistant', response['Description'], '', '', 'message');
     }
@@ -110,7 +112,10 @@ class _HomePageState extends State<HomePage> {
     }
     final id =
         await dbHelper.insertMessage(0, "assistant", upload['Description']);
+    if(upload['Danger'].startsWith("Yes")) await _beep.makeDangerAlert(); // makes danger alert after every response
+    await Future.delayed(const Duration(seconds: 1)); // make a delay after beep
     _ttsService.speak(upload['Description']);
+   
     addMessage(
         id.toString(), 'assistant', upload['Description'], '', '', 'message');
   }
@@ -126,7 +131,11 @@ class _HomePageState extends State<HomePage> {
         await _mediaUploader.uploadVideo(fileName, mimeType, appState);
     final id =
         await dbHelper.insertMessage(0, "assistant", upload['Description']);
+    if(upload['Danger'].startsWith("Yes")) await _beep.makeDangerAlert(); // makes danger alert after every response
+    await Future.delayed(const Duration(seconds: 1));
     _ttsService.speak(upload['Description']);
+    
+
     addMessage(
         id.toString(), 'assistant', upload['Description'], '', '', 'message');
   }
@@ -140,9 +149,12 @@ class _HomePageState extends State<HomePage> {
 
     Map<String, dynamic> upload =
         await _mediaUploader.uploadImage(fileName, mimeType, appState);
-    final id =
-        await dbHelper.insertMessage(0, "assistant", upload['Description']);
+    final id = await dbHelper.insertMessage(0, "assistant", upload['Description']);
+    if(upload['Danger'].startsWith("Yes")) await _beep.makeDangerAlert(); // makes danger alert after every response'
+    await Future.delayed(const Duration(seconds: 1));
     _ttsService.speak(upload['Description']);
+      
+
     addMessage(
         id.toString(), 'assistant', upload['Description'], '', '', 'message');
   }
