@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
@@ -18,6 +19,7 @@ class VideoRecordingScreenState extends State<VideoRecordingScreen> {
   late CameraController _controller;
   late Future<void> _initializeControllerFuture;
   bool _isRecording = false;
+  Timer? _timer;
 
   @override
   void initState() {
@@ -29,6 +31,7 @@ class VideoRecordingScreenState extends State<VideoRecordingScreen> {
   @override
   void dispose() {
     _controller.dispose();
+    _timer?.cancel();
     super.dispose();
   }
 
@@ -41,25 +44,36 @@ class VideoRecordingScreenState extends State<VideoRecordingScreen> {
         setState(() {
           _isRecording = true;
         });
+        _timer = Timer(const Duration(seconds: 10), () async {
+          if (_isRecording) {
+            XFile video = await _controller.stopVideoRecording();
+            _saveAndReturnVideo(video);
+          }
+        });
       } else {
         XFile video = await _controller.stopVideoRecording();
-        final Directory tempDir = await getTemporaryDirectory();
-        final String newPath = path.join(
-          tempDir.path,
-          '${DateTime.now().millisecondsSinceEpoch}.mp4',
-        );
-
-        File newFile = await File(video.path).copy(newPath);
-
-        setState(() {
-          _isRecording = false;
-        });
-
-        Navigator.pop(context, newFile);
+        _timer?.cancel();
+        _saveAndReturnVideo(video);
       }
     } catch (e) {
       developer.log(e.toString());
     }
+  }
+
+  Future<void> _saveAndReturnVideo(XFile video) async {
+    final Directory tempDir = await getTemporaryDirectory();
+    final String newPath = path.join(
+      tempDir.path,
+      '${DateTime.now().millisecondsSinceEpoch}.mp4',
+    );
+
+    File newFile = await File(video.path).copy(newPath);
+
+    setState(() {
+      _isRecording = false;
+    });
+
+    Navigator.pop(context, newFile);
   }
 
   @override

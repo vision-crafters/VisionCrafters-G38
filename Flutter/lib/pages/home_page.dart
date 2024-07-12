@@ -1,5 +1,6 @@
 import 'dart:async'; // Add this import for the Timer
 import 'dart:io';
+import 'package:flutterbasics/services/flutter_tts.dart'; // for tts check in services folder
 import 'package:mime/mime.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -38,7 +39,10 @@ class _HomePageState extends State<HomePage> {
   final MediaPicker _mediaPicker = MediaPicker();
   final MediaSaver _mediaSaver = MediaSaver();
   final MediaUploader _mediaUploader = MediaUploader();
-  int conversationId = -1;
+  late File fileName;
+  late String? mimeType;
+  final TTSService _ttsService = TTSService();
+    int conversationId = -1;
   bool flag = true;
   Timer? _timer;
 
@@ -69,7 +73,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _startTimer() {
-    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       setState(() {}); // This will refresh the state periodically
     });
   }
@@ -89,69 +93,67 @@ class _HomePageState extends State<HomePage> {
       developer.log('Message sent to database: $message');
       _controller.clear();
       addMessage(id, 'user', message, '', '', 'message');
+      final response = await _mediaUploader.uploadQuery(
+          messages, fileName, mimeType, message);
+      final id2 =
+          await dbHelper.insertMessage(0, 'assistant', response['Description']);
+      _ttsService.speak(response['Description']);
+      addMessage(id2, 'assistant', response['Description'], '', '', 'message');
     }
   }
 
   Future<void> getMedia(BuildContext context, AppState appState) async {
-    File? mediaFileName = await _mediaPicker.pickMedia(context, appState);
+    Map<String, dynamic> upload = {};
+    fileName = await _mediaPicker.pickMedia(context, appState);
     if (flag) {
       conversationId = await dbHelper.insertConversation();
     }
+    mimeType = lookupMimeType(fileName.path);
+    if (mimeType != null && mimeType!.startsWith('image')) {
+      final image = await _mediaSaver.saveImage(
+            fileName, mimeType, conversationId);
+      addMessage(image['id'], 'user', '', mimeType, image['path'], 'media');
 
-    if (mediaFileName != null) {
-      final mimeType = lookupMimeType(mediaFileName.path);
-      if (mimeType != null && mimeType.startsWith('image')) {
-        final image = await _mediaSaver.saveImage(
-            mediaFileName, mimeType, conversationId);
-        addMessage(image['id'], 'user', '', mimeType, image['path'], 'media');
-
-        Map<String, dynamic> upload =
-            await _mediaUploader.uploadImage(mediaFileName, mimeType, appState);
-        final id = await dbHelper.insertMessage(
-            conversationId, "assistant", upload['Description']);
+        upload = await _mediaUploader.uploadImage(fileName, mimeType, appState);
+        final id =
+            await dbHelper.insertMessage(conversationId, "assistant", upload['Description']);
         addMessage(id.toString(), 'assistant', upload['Description'], '', '',
             'message');
-        if (flag) {
-          dbHelper.updateConversationWithId(upload['Title'], conversationId);
-        }
-      } else if (mimeType != null && mimeType.startsWith('video')) {
-        final video = await _mediaSaver.saveVideo(
-            mediaFileName, mimeType, conversationId);
+
+      } else if (mimeType != null && mimeType!.startsWith('video')) {
+        final video = await _mediaSaver.saveVideo(fileName, mimeType, conversationId);
         addMessage(video['id'].toString(), 'user', '', mimeType, video['path'],
             'media');
 
-        Map<String, dynamic> upload =
-            await _mediaUploader.uploadVideo(mediaFileName, mimeType, appState);
-        final id = await dbHelper.insertMessage(
-            conversationId, "assistant", upload['Description']);
+        upload = await _mediaUploader.uploadVideo(fileName, mimeType, appState);
+      } 
+        final id =
+            await dbHelper.insertMessage(conversationId, "assistant", upload['Description']);
         addMessage(id.toString(), 'assistant', upload['Description'], '', '',
             'message');
         if (flag) {
           dbHelper.updateConversationWithId(upload['Title'], conversationId);
           flag = false;
         }
-      } else {
-        developer.log("Unsupported file type");
-      }
-    }
+        _ttsService.speak(upload['Description']);
   }
 
   Future<void> getVideo(BuildContext context, AppState appState) async {
-    File? videoFile = await _mediaPicker.getVideoFile(context, appState);
+    fileName = await _mediaPicker.getVideoFile(context, appState);
     if (flag) {
       conversationId = await dbHelper.insertConversation();
     }
-    if (videoFile != null) {
-      final mimeType = lookupMimeType(videoFile.path);
-      final path =
-          await _mediaSaver.saveVideo(videoFile, mimeType, conversationId);
-      addMessage(
-          path['id'].toString(), 'user', '', mimeType, path['path'], 'media');
+    mimeType = lookupMimeType(fileName.path);
+    final path =
+          await _mediaSaver.saveVideo(fileName, mimeType, conversationId);
+    addMessage(
+        path['id'].toString(), 'user', '', mimeType, path['path'], 'media');
 
       Map<String, dynamic> upload =
-          await _mediaUploader.uploadVideo(videoFile, mimeType, appState);
-      final id = await dbHelper.insertMessage(
-          conversationId, "assistant", upload['Description']);
+          await _mediaUploader.uploadVideo(fileName, mimeType, appState);
+      final id =
+          await dbHelper.insertMessage(conversationId, "assistant", upload['Description']);
+      _ttsService.speak(upload['Description']);
       addMessage(
           id.toString(), 'assistant', upload['Description'], '', '', 'message');
       if (flag) {
@@ -159,24 +161,24 @@ class _HomePageState extends State<HomePage> {
         flag = false;
       }
     }
-  }
+
 
   Future<void> getImage(BuildContext context, AppState appState) async {
-    File? imageFile = await _mediaPicker.getImageCM(context, appState);
+    fileName = await _mediaPicker.getImageCM(context, appState);
     if (flag) {
       conversationId = await dbHelper.insertConversation();
     }
-    if (imageFile != null) {
-      final mimeType = lookupMimeType(imageFile.path);
-      final path =
-          await _mediaSaver.saveImage(imageFile, mimeType, conversationId);
+      final mimeType = lookupMimeType(fileName.path);
+      final path = await _mediaSaver.saveImage(fileName, mimeType, conversationId);
       addMessage(
           path['id'].toString(), 'user', '', mimeType, path['path'], 'media');
-
+          
       Map<String, dynamic> upload =
-          await _mediaUploader.uploadImage(imageFile, mimeType, appState);
-      final id = await dbHelper.insertMessage(
-          conversationId, "assistant", upload['Description']);
+          await _mediaUploader.uploadImage(fileName, mimeType, appState);
+      final id =
+          await dbHelper.insertMessage(conversationId, "assistant", upload['Description']);
+      _ttsService.speak(upload['Description']);
+
       addMessage(
           id.toString(), 'assistant', upload['Description'], '', '', 'message');
       if (flag) {
@@ -184,7 +186,7 @@ class _HomePageState extends State<HomePage> {
         flag = false;
       }
     }
-  }
+
 
   Future<void> addMessage(final id, final role, final content, final mimeType,
       final path, final type) async {
@@ -196,7 +198,7 @@ class _HomePageState extends State<HomePage> {
         'content': content,
         'mime_type': mimeType,
         'path': path,
-        'timestamp': DateTime.now().millisecondsSinceEpoch,
+        'timestamp': DateTime.now(),
         'type': type,
       });
     });
