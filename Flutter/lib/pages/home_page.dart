@@ -19,6 +19,7 @@ import 'package:flutterbasics/services/media_saver.dart';
 import 'package:flutterbasics/services/media_upload.dart';
 import 'package:flutterbasics/providers/app_state.dart';
 import 'dart:developer' as developer;
+import 'package:flutterbasics/services/beep_sound.dart';
 
 class HomePage extends StatefulWidget {
   final Database database;
@@ -42,9 +43,10 @@ class _HomePageState extends State<HomePage> {
   late File fileName;
   late String? mimeType;
   final TTSService _ttsService = TTSService();
+  final BeepSound _beep = BeepSound();
   int conversationId = -1;
   bool flag = true;
-    final ScrollController _scrollController =
+  final ScrollController _scrollController =
       ScrollController(); // Add this line
 
   @override
@@ -89,8 +91,8 @@ class _HomePageState extends State<HomePage> {
       addMessage(id, 'user', message, '', '', 'message');
       final response = await _mediaUploader.uploadQuery(
           messages, fileName, mimeType, message);
-      final id2 =
-          await dbHelper.insertMessage(conversationId, 'assistant', response['Description']);
+      final id2 = await dbHelper.insertMessage(
+          conversationId, 'assistant', response['Description']);
       _ttsService.speak(response['Description']);
       addMessage(id2, 'assistant', response['Description'], '', '', 'message');
     }
@@ -105,29 +107,34 @@ class _HomePageState extends State<HomePage> {
     }
     mimeType = lookupMimeType(fileName.path);
     if (mimeType != null && mimeType!.startsWith('image')) {
-      final image = await _mediaSaver.saveImage(
-            fileName, mimeType, conversationId);
+      final image =
+          await _mediaSaver.saveImage(fileName, mimeType, conversationId);
       addMessage(image['id'], 'user', '', mimeType, image['path'], 'media');
 
-        upload = await _mediaUploader.uploadImage(fileName, mimeType, appState);
+      upload = await _mediaUploader.uploadImage(fileName, mimeType, appState);
+    } else if (mimeType != null && mimeType!.startsWith('video')) {
+      final video =
+          await _mediaSaver.saveVideo(fileName, mimeType, conversationId);
+      addMessage(
+          video['id'].toString(), 'user', '', mimeType, video['path'], 'media');
 
-      } else if (mimeType != null && mimeType!.startsWith('video')) {
-        final video = await _mediaSaver.saveVideo(fileName, mimeType, conversationId);
-        addMessage(video['id'].toString(), 'user', '', mimeType, video['path'],
-            'media');
-
-        upload = await _mediaUploader.uploadVideo(fileName, mimeType, appState);
-      } 
-        final id =
-            await dbHelper.insertMessage(conversationId, "assistant", upload['Description']);
-        addMessage(id.toString(), 'assistant', upload['Description'], '', '',
-            'message');
-        if (flag) {
-          dbHelper.updateConversationWithId(upload['Title'], conversationId);
-          flag = false;
-        }
-        _ttsService.speak(upload['Description']);
-        _scrollToBottom(); // Scroll to the bottom after sending a message
+      upload = await _mediaUploader.uploadVideo(fileName, mimeType, appState);
+    }
+    final id = await dbHelper.insertMessage(
+        conversationId, "assistant", upload['Description']);
+    addMessage(
+        id.toString(), 'assistant', upload['Description'], '', '', 'message');
+    if (flag) {
+      dbHelper.updateConversationWithId(upload['Title'], conversationId);
+      flag = false;
+    }
+    if (upload['Danger'].startsWith("Yes")) {
+      await _beep.makeDangerAlert(); // makes danger alert after every response
+      await Future.delayed(
+          const Duration(seconds: 1)); // make a delay after beep
+    }
+    _ttsService.speak(upload['Description']);
+    _scrollToBottom(); // Scroll to the bottom after sending a message
   }
 
   Future<void> getVideo(BuildContext context, AppState appState) async {
@@ -137,56 +144,65 @@ class _HomePageState extends State<HomePage> {
     }
     mimeType = lookupMimeType(fileName.path);
     final path =
-          await _mediaSaver.saveVideo(fileName, mimeType, conversationId);
+        await _mediaSaver.saveVideo(fileName, mimeType, conversationId);
     addMessage(
         path['id'].toString(), 'user', '', mimeType, path['path'], 'media');
 
-      Map<String, dynamic> upload =
-          await _mediaUploader.uploadVideo(fileName, mimeType, appState);
-      final id =
-          await dbHelper.insertMessage(conversationId, "assistant", upload['Description']);
-      _ttsService.speak(upload['Description']);
-      addMessage(
-          id.toString(), 'assistant', upload['Description'], '', '', 'message');
-      if (flag) {
-        dbHelper.updateConversationWithId(upload['Title'], conversationId);
-        flag = false;
-      }
-      _scrollToBottom();
+    Map<String, dynamic> upload =
+        await _mediaUploader.uploadVideo(fileName, mimeType, appState);
+    final id = await dbHelper.insertMessage(
+        conversationId, "assistant", upload['Description']);
+    addMessage(
+        id.toString(), 'assistant', upload['Description'], '', '', 'message');
+    if (flag) {
+      dbHelper.updateConversationWithId(upload['Title'], conversationId);
+      flag = false;
     }
-
+    if (upload['Danger'].startsWith("Yes")) {
+      await _beep.makeDangerAlert(); // makes danger alert after every response
+      await Future.delayed(
+          const Duration(seconds: 1)); // make a delay after beep
+    }
+    _ttsService.speak(upload['Description']);
+    _scrollToBottom();
+  }
 
   Future<void> getImage(BuildContext context, AppState appState) async {
     fileName = await _mediaPicker.getImageCM(context, appState);
     if (flag) {
       conversationId = await dbHelper.insertConversation();
     }
-      mimeType = lookupMimeType(fileName.path);
-      final path = await _mediaSaver.saveImage(fileName, mimeType, conversationId);
-      addMessage(
-          path['id'].toString(), 'user', '', mimeType, path['path'], 'media');
-          
-      Map<String, dynamic> upload =
-          await _mediaUploader.uploadImage(fileName, mimeType, appState);
-      final id =
-          await dbHelper.insertMessage(conversationId, "assistant", upload['Description']);
-      _ttsService.speak(upload['Description']);
+    mimeType = lookupMimeType(fileName.path);
+    final path =
+        await _mediaSaver.saveImage(fileName, mimeType, conversationId);
+    addMessage(
+        path['id'].toString(), 'user', '', mimeType, path['path'], 'media');
 
-      addMessage(
-          id.toString(), 'assistant', upload['Description'], '', '', 'message');
-      if (flag) {
-        dbHelper.updateConversationWithId(upload['Title'], conversationId);
-        flag = false;
-      }
-      _scrollToBottom(); // Scroll to the bottom after sending a message
+    Map<String, dynamic> upload =
+        await _mediaUploader.uploadImage(fileName, mimeType, appState);
+    final id = await dbHelper.insertMessage(
+        conversationId, "assistant", upload['Description']);
+    addMessage(
+        id.toString(), 'assistant', upload['Description'], '', '', 'message');
+    if (flag) {
+      dbHelper.updateConversationWithId(upload['Title'], conversationId);
+      flag = false;
     }
+    if (upload['Danger'].startsWith("Yes")) {
+      await _beep.makeDangerAlert(); // makes danger alert after every response
+      await Future.delayed(
+          const Duration(seconds: 1)); // make a delay after beep
+    }
+    _ttsService.speak(upload['Description']);
+    _scrollToBottom(); // Scroll to the bottom after sending a message
+  }
 
   Future<void> addMessage(final id, final role, final content, final mimeType,
       final path, final type) async {
     setState(() {
       messages.add({
         'id': id.toString(),
-        'conversation_id': '0',
+        'conversation_id': conversationId,
         'role': role,
         'content': content,
         'mime_type': mimeType,
@@ -263,7 +279,6 @@ class _HomePageState extends State<HomePage> {
             children: [
               Expanded(
                 child: ListView.builder(
-                  
                   controller: _scrollController, // Attach ScrollController
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
