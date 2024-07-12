@@ -48,7 +48,10 @@ class CameraPreviewScreenState extends State<CameraPreviewScreen> {
         future: _initializeControllerFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.done) {
-            return CameraPreview(_controller);
+            return GestureDetector(
+              onDoubleTap: _takePicture,
+              child: CameraPreview(_controller),
+            );
           } else {
             return const Center(child: CircularProgressIndicator());
           }
@@ -61,3 +64,6 @@ class CameraPreviewScreenState extends State<CameraPreviewScreen> {
     );
   }
 }
+
+
+

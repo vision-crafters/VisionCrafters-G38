@@ -6,6 +6,7 @@ import '../providers/app_state.dart';
 import 'package:flutterbasics/pages/camera_preview_screen.dart';
 import 'package:flutterbasics/pages/video_recording_screen.dart';
 import 'package:camera/camera.dart';
+import 'package:video_player/video_player.dart';
 
 class MediaPicker {
   final ImagePicker _picker = ImagePicker(); // Pick image or video from gallery
@@ -18,25 +19,18 @@ class MediaPicker {
     final choice = await showDialog<String>(
       context: context,
       builder: (BuildContext context) {
-        // builder for the dialog
-
         return AlertDialog(
-          // dialog box
           title: const Text('Choose Media Type'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               ListTile(
                 title: const Text('Image'),
-                onTap: () =>
-                    Navigator.pop(context, 'image'), // option to select image
-                //will open the gallery to select images by the user
+                onTap: () => Navigator.pop(context, 'image'),
               ),
               ListTile(
                 title: const Text('Video'),
-                onTap: () =>
-                    Navigator.pop(context, 'video'), // option to select video
-                //will open the gallery to select videos by the user
+                onTap: () => Navigator.pop(context, 'video'),
               ),
             ],
           ),
@@ -45,24 +39,40 @@ class MediaPicker {
     );
 
     if (choice != null) {
-      // if choice is not null
-      XFile? pickedFile; //XFile for the selected image or video
+      XFile? pickedFile;
       if (choice == 'image') {
         pickedFile = await _picker.pickImage(
-          source: ImageSource
-              .gallery, // will open the gallery to select images by the user
+          source: ImageSource.gallery,
           imageQuality: 100,
           maxHeight: 1080,
           maxWidth: 1920,
         );
       } else if (choice == 'video') {
-        pickedFile = await _picker.pickVideo(
-            source: ImageSource
-                .gallery); // will open the gallery to select videos by the user
+        pickedFile = await _picker.pickVideo(source: ImageSource.gallery);
+
+        if (pickedFile != null) {
+          final VideoPlayerController videoPlayerController =
+              VideoPlayerController.file(File(pickedFile.path));
+          await videoPlayerController.initialize();
+          if (videoPlayerController.value.duration.inSeconds > 10) {
+            videoPlayerController.dispose();
+            showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return const AlertDialog(
+                  content: Text(
+                      'The selected video is longer than 10 seconds. Please choose a video of 10 seconds or less.'),
+                );
+              },
+            );
+            throw Exception(
+                'The selected video is longer than 10 seconds. Please choose a video of 10 seconds or less.');
+          }
+          videoPlayerController.dispose();
+        }
       }
 
       if (pickedFile != null) {
-        // if pickedFile is not null
         return File(pickedFile.path);
       } else {
         developer.log("No file selected");
@@ -70,8 +80,10 @@ class MediaPicker {
       }
     } else {
       developer.log("No choice selected");
-      throw Exception("No choice selected");}
+      throw Exception("No choice selected");
+    }
   }
+
 
   Future<File> getImageCM(BuildContext context, AppState appState) async {
     final cameras = await availableCameras();
