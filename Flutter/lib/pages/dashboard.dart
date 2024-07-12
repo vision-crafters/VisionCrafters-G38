@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutterbasics/ChatScreen.dart';
+import 'package:flutterbasics/pages/chat_screen.dart';
 
 class DashBoardScreen extends StatelessWidget {
   final List<Map<String, String>> items = [
@@ -55,7 +55,7 @@ class DashBoardScreen extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => ChatScreen(),
+                          builder: (context) => const ChatScreen(),
                         ),
                       );
                     },
