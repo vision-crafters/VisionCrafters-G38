@@ -25,7 +25,7 @@ class MediaSaver {
   }
 
   Future<Map<String, String>> saveImage(
-      File imageFile, String? mimeType) async {
+      File imageFile, String? mimeType,final conversationId) async {
     final appDir = await _getAppDirectory();
 
     final fileName = path.basename(imageFile.path);
@@ -39,12 +39,12 @@ class MediaSaver {
     final newFilePath = path.join(filePath, fileName);
     await imageFile.copy(newFilePath);
 
-    final id = await dbHelper.insertMedia(0, mimeType, newFilePath);
+    final id = await dbHelper.insertMedia(conversationId  , mimeType, newFilePath);
     return {'path': newFilePath, 'id': id.toString()};
   }
 
   Future<Map<String, String>> saveVideo(
-      File videoFile, String? mimeType) async {
+      File videoFile, String? mimeType,final conversationId) async {
     final appDir = await _getAppDirectory();
 
     final filename = path.basename(videoFile.path);
@@ -57,7 +57,7 @@ class MediaSaver {
     final newFilePath = path.join(filePath, filename);
     await videoFile.copy(newFilePath);
 
-    final id = await dbHelper.insertMedia(0, mimeType, newFilePath);
+    final id = await dbHelper.insertMedia(conversationId, mimeType, newFilePath);
     return {'path': newFilePath, 'id': id.toString()};
   }
 }

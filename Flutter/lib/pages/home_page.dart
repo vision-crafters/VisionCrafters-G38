@@ -1,5 +1,5 @@
+import 'dart:async'; // Add this import for the Timer
 import 'dart:io';
-
 import 'package:flutterbasics/services/flutter_tts.dart'; // for tts check in services folder
 import 'package:mime/mime.dart';
 import 'package:flutter/material.dart';
@@ -20,23 +20,18 @@ import 'package:flutterbasics/services/media_upload.dart';
 import 'package:flutterbasics/providers/app_state.dart';
 import 'dart:developer' as developer;
 
-//A stateful widget that maintains the state of the home page.
 class HomePage extends StatefulWidget {
   final Database database;
 
-  const HomePage(
-      {super.key,
-      required this.database}); //constructor for the HomePage widget
+  const HomePage({super.key, required this.database});
 
   @override
-  State<HomePage> createState() =>
-      _HomePageState(); //Creates the state of the widget
+  State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
   final DatabaseHelper dbHelper = DatabaseHelper.instance;
-  bool showSpinner =
-      false; //Boolean to control the display of a loading spinner.
+  bool showSpinner = false;
   bool _isFocused = false;
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
@@ -47,6 +42,8 @@ class _HomePageState extends State<HomePage> {
   late File fileName;
   late String? mimeType;
   final TTSService _ttsService = TTSService();
+  int conversationId = -1;
+  bool flag = true;
     final ScrollController _scrollController =
       ScrollController(); // Add this line
 
@@ -54,7 +51,10 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _focusNode.addListener(_onFocusChange);
-    _loadMessages();
+    if (conversationId != -1) {
+      _loadMessages();
+      flag = false;
+    }
   }
 
   @override
@@ -73,7 +73,8 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _loadMessages() async {
-    List<Map<String, dynamic>> data = await dbHelper.getConversationData(0);
+    List<Map<String, dynamic>> data =
+        await dbHelper.getConversationData(conversationId);
     messages = List<Map<String, dynamic>>.from(data);
     developer.log(messages.toString());
     setState(() {});
@@ -82,14 +83,14 @@ class _HomePageState extends State<HomePage> {
   void _sendMessage() async {
     String message = _controller.text.trim();
     if (message.isNotEmpty) {
-      final id = await dbHelper.insertMessage(0, 'user', message);
+      final id = await dbHelper.insertMessage(conversationId, 'user', message);
       developer.log('Message sent to database: $message');
       _controller.clear();
       addMessage(id, 'user', message, '', '', 'message');
       final response = await _mediaUploader.uploadQuery(
           messages, fileName, mimeType, message);
       final id2 =
-          await dbHelper.insertMessage(0, 'assistant', response['Description']);
+          await dbHelper.insertMessage(conversationId, 'assistant', response['Description']);
       _ttsService.speak(response['Description']);
       addMessage(id2, 'assistant', response['Description'], '', '', 'message');
     }
@@ -99,63 +100,86 @@ class _HomePageState extends State<HomePage> {
   Future<void> getMedia(BuildContext context, AppState appState) async {
     Map<String, dynamic> upload = {};
     fileName = await _mediaPicker.pickMedia(context, appState);
+    if (flag) {
+      conversationId = await dbHelper.insertConversation();
+    }
     mimeType = lookupMimeType(fileName.path);
     if (mimeType != null && mimeType!.startsWith('image')) {
-      final image = await _mediaSaver.saveImage(fileName, mimeType);
+      final image = await _mediaSaver.saveImage(
+            fileName, mimeType, conversationId);
       addMessage(image['id'], 'user', '', mimeType, image['path'], 'media');
 
-      upload = await _mediaUploader.uploadImage(fileName, mimeType, appState);
-    } else if (mimeType != null && mimeType!.startsWith('video')) {
-      final video = await _mediaSaver.saveVideo(fileName, mimeType);
-      addMessage(
-          video['id'].toString(), 'user', '', mimeType, video['path'], 'media');
+        upload = await _mediaUploader.uploadImage(fileName, mimeType, appState);
 
-      upload = await _mediaUploader.uploadVideo(fileName, mimeType, appState);
-    }
-    final id =
-        await dbHelper.insertMessage(0, "assistant", upload['Description']);
-    _ttsService.speak(upload['Description']);
-    addMessage(
-        id.toString(), 'assistant', upload['Description'], '', '', 'message');
-    _scrollToBottom(); // Scroll to the bottom after sending a message
+      } else if (mimeType != null && mimeType!.startsWith('video')) {
+        final video = await _mediaSaver.saveVideo(fileName, mimeType, conversationId);
+        addMessage(video['id'].toString(), 'user', '', mimeType, video['path'],
+            'media');
+
+        upload = await _mediaUploader.uploadVideo(fileName, mimeType, appState);
+      } 
+        final id =
+            await dbHelper.insertMessage(conversationId, "assistant", upload['Description']);
+        addMessage(id.toString(), 'assistant', upload['Description'], '', '',
+            'message');
+        if (flag) {
+          dbHelper.updateConversationWithId(upload['Title'], conversationId);
+          flag = false;
+        }
+        _ttsService.speak(upload['Description']);
+        _scrollToBottom(); // Scroll to the bottom after sending a message
   }
 
   Future<void> getVideo(BuildContext context, AppState appState) async {
     fileName = await _mediaPicker.getVideoFile(context, appState);
+    if (flag) {
+      conversationId = await dbHelper.insertConversation();
+    }
     mimeType = lookupMimeType(fileName.path);
-    final path = await _mediaSaver.saveVideo(fileName, mimeType);
+    final path =
+          await _mediaSaver.saveVideo(fileName, mimeType, conversationId);
     addMessage(
         path['id'].toString(), 'user', '', mimeType, path['path'], 'media');
 
-    Map<String, dynamic> upload =
-        await _mediaUploader.uploadVideo(fileName, mimeType, appState);
-    final id =
-        await dbHelper.insertMessage(0, "assistant", upload['Description']);
-    _ttsService.speak(upload['Description']);
-    addMessage(
-        id.toString(), 'assistant', upload['Description'], '', '', 'message');
-    _scrollToBottom();
-  }
+      Map<String, dynamic> upload =
+          await _mediaUploader.uploadVideo(fileName, mimeType, appState);
+      final id =
+          await dbHelper.insertMessage(conversationId, "assistant", upload['Description']);
+      _ttsService.speak(upload['Description']);
+      addMessage(
+          id.toString(), 'assistant', upload['Description'], '', '', 'message');
+      if (flag) {
+        dbHelper.updateConversationWithId(upload['Title'], conversationId);
+        flag = false;
+      }
+      _scrollToBottom();
+    }
+
 
   Future<void> getImage(BuildContext context, AppState appState) async {
     fileName = await _mediaPicker.getImageCM(context, appState);
-    _scrollToBottom();
-    mimeType = lookupMimeType(fileName.path);
-    final path = await _mediaSaver.saveImage(fileName, mimeType);
-    _scrollToBottom();
-    addMessage(
-        path['id'].toString(), 'user', '', mimeType, path['path'], 'media');
-    _scrollToBottom();
-    Map<String, dynamic> upload =
-        await _mediaUploader.uploadImage(fileName, mimeType, appState);
-    _scrollToBottom();
+    if (flag) {
+      conversationId = await dbHelper.insertConversation();
+    }
+      mimeType = lookupMimeType(fileName.path);
+      final path = await _mediaSaver.saveImage(fileName, mimeType, conversationId);
+      addMessage(
+          path['id'].toString(), 'user', '', mimeType, path['path'], 'media');
+          
+      Map<String, dynamic> upload =
+          await _mediaUploader.uploadImage(fileName, mimeType, appState);
+      final id =
+          await dbHelper.insertMessage(conversationId, "assistant", upload['Description']);
+      _ttsService.speak(upload['Description']);
 
-    final id =
-        await dbHelper.insertMessage(0, "assistant", upload['Description']);
-    addMessage(
-        id.toString(), 'assistant', upload['Description'], '', '', 'message');
-    _scrollToBottom(); // Scroll to the bottom after sending a message
-  }
+      addMessage(
+          id.toString(), 'assistant', upload['Description'], '', '', 'message');
+      if (flag) {
+        dbHelper.updateConversationWithId(upload['Title'], conversationId);
+        flag = false;
+      }
+      _scrollToBottom(); // Scroll to the bottom after sending a message
+    }
 
   Future<void> addMessage(final id, final role, final content, final mimeType,
       final path, final type) async {
@@ -186,12 +210,14 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    //Builds the UI of the home page
     final appState = Provider.of<AppState>(context);
     return GestureDetector(
+      onTap: () {
+        FocusScope.of(context).unfocus();
+      },
       onDoubleTap: () {
         getImage(context, appState);
-      }, //Double tap gesture to open the camera
+      },
       onLongPress: () {
         showDialog(
           context: context,
@@ -200,34 +226,41 @@ class _HomePageState extends State<HomePage> {
       },
       child: Scaffold(
         appBar: AppBar(
-          //Displays the title and a settings button.
           title: const Text("Vision Crafters"),
           actions: [
             IconButton(
+                icon: const Icon(Icons.chat_bubble_outline_rounded),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => HomePage(
+                        database: widget.database,
+                      ),
+                    ),
+                  );
+                }),
+            IconButton(
               icon: const Icon(Icons.settings),
               onPressed: () {
-                //Function to be executed when the settings button is pressed
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                      builder: (context) =>
-                          const SettingsPage()), //Navigates to the settings page
+                  MaterialPageRoute(builder: (context) => const SettingsPage()),
                 );
               },
             ),
+            const Padding(padding: EdgeInsets.only(right: 10.0)),
           ],
         ),
         drawer: Drawer(
-          //Provides a navigation drawer
           width: MediaQuery.of(context).size.width * 0.8,
-          child: DashBoardScreen(), //Displays the dashboard screen
+          child: DashBoardScreen(),
         ),
         body: ModalProgressHUD(
           // Displays a loading spinner when appState.showSpinner is true
           inAsyncCall: appState.showSpinner,
           child: Column(
             children: [
-              //Displays the UI of the home page
               Expanded(
                 child: ListView.builder(
                   
@@ -262,60 +295,37 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               Container(
-                // Displays a floating action button
-                padding: const EdgeInsets.all(8.0), // Padding around the button
+                padding: const EdgeInsets.all(8.0),
                 child: Row(
-                  //Contains a speed dial for image/video picking,a text
-                  //input field, and a microphone button for speech-to-text
                   children: [
                     FloatingActionButton(
-                      //Displays a speed dial for image/video picking
                       shape: const CircleBorder(),
-                      heroTag: "UniqueTag2", //Unique identifier for the button
+                      heroTag: "UniqueTag2",
                       onPressed: () {},
                       child: SpeedDial(
-                        //Speed dial for image/video picking
-                        animatedIcon: AnimatedIcons
-                            .menu_close, //Animated icon for the button
-                        direction:
-                            SpeedDialDirection.up, //Direction of the speed dial
+                        animatedIcon: AnimatedIcons.menu_close,
+                        direction: SpeedDialDirection.up,
                         children: [
-                          //List of children for the speed dial
                           SpeedDialChild(
-                            //Child for the camera button
-                            shape: const CircleBorder(), //Shape of the button
-                            child:
-                                const Icon(Icons.camera), //Icon for the button
+                            shape: const CircleBorder(),
+                            child: const Icon(Icons.camera),
                             onTap: () => getImage(context, appState),
-                            //Function to be executed when the button is pressed
-                            //Calls the getImageCM function with the context,
-                            //addDescription, and appState as parameters
                           ),
                           SpeedDialChild(
-                            //Child for the video button
                             shape: const CircleBorder(),
                             child: const Icon(Icons.video_call),
                             onTap: () => getVideo(context, appState),
-                            // Function to be executed when the button is pressed
-                            //Calls the getVideoFile function with the context,
-                            //addDescription, and appState as parameters
                           ),
                           SpeedDialChild(
-                            //Child for the gallery button
                             shape: const CircleBorder(),
                             child: const Icon(Icons.browse_gallery_sharp),
                             onTap: () => getMedia(context, appState),
-                            //Function to be executed when the button is pressed
-                            //Calls the pickMedia function with the context,
-                            //addDescription, and appState as parameters
                           ),
                         ],
                       ),
                     ),
                     Expanded(
-                      //Expanded widget to expand the text input field
                       child: Padding(
-                        //Padding widget to add padding to the text input field
                         padding: const EdgeInsets.symmetric(horizontal: 8.0),
                         child: TextFormField(
                           controller: _controller,
@@ -330,31 +340,26 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                     FloatingActionButton(
-                      //Displays a microphone button for speech-to-text
                       onPressed: _isFocused
-                          ? _sendMessage
+                          ? () {
+                              _sendMessage();
+                              FocusScope.of(context).unfocus();
+                            }
                           : () {
                               showDialog(
-                                //Displays a dialog box for speech-to-text
-                                context: context, //Context for the dialog box
-                                builder: (context) =>
-                                    const Speech(), //Speech dialog box
-                                // will be opened up when the microphone button is pressed
+                                context: context,
+                                builder: (context) => const Speech(),
                               );
                             },
-                      child: Icon(_isFocused
-                          ? Icons.send
-                          : Icons.mic), // Icon for the microphone button
+                      child: Icon(_isFocused ? Icons.send : Icons.mic),
                     ),
-                  ], //end of children
+                  ],
                 ),
               ),
             ],
           ),
         ),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-        //This places the FAB at the center of the bottom of the screen, docked
-        //within the BottomAppBar.
       ),
     );
   }

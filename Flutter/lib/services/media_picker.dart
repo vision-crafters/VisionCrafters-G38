@@ -13,8 +13,9 @@ class MediaPicker {
 
   // Pick image or video from gallery
   // by taking the choice and parameters from the user
-
   Future<File> pickMedia(BuildContext context, AppState appState) async {
+    //dialog to give the user an option
+    //to select between an image or a video from the gallery
     final choice = await showDialog<String>(
       context: context,
       builder: (BuildContext context) {
