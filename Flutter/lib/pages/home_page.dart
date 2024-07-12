@@ -20,6 +20,7 @@ import 'package:flutterbasics/services/media_upload.dart';
 import 'package:flutterbasics/providers/app_state.dart';
 import 'dart:developer' as developer;
 import 'package:flutterbasics/services/beep_sound.dart';
+
 //A stateful widget that maintains the state of the home page.
 class HomePage extends StatefulWidget {
   final Database database;
@@ -46,8 +47,9 @@ class _HomePageState extends State<HomePage> {
   final MediaUploader _mediaUploader = MediaUploader();
   late File fileName;
   late String? mimeType;
+  String? _errorMessage;
   final TTSService _ttsService = TTSService();
-  
+
   final BeepSound _beep = BeepSound();
   @override
   void initState() {
@@ -88,7 +90,7 @@ class _HomePageState extends State<HomePage> {
           messages, fileName, mimeType, message);
       final id2 =
           await dbHelper.insertMessage(0, 'assistant', response['Description']);
-      await _beep.makeDangerAlert(); // makes danger alert after every response
+
       _ttsService.speak(response['Description']);
       addMessage(id2, 'assistant', response['Description'], '', '', 'message');
     }
@@ -112,10 +114,14 @@ class _HomePageState extends State<HomePage> {
     }
     final id =
         await dbHelper.insertMessage(0, "assistant", upload['Description']);
-    if(upload['Danger'].startsWith("Yes")) await _beep.makeDangerAlert(); // makes danger alert after every response
-    await Future.delayed(const Duration(seconds: 1)); // make a delay after beep
+    if (upload['Danger'].startsWith("Yes")) {
+      await _beep.makeDangerAlert(); // makes danger alert after every response
+      await Future.delayed(
+          const Duration(seconds: 1)); // make a delay after beep
+    }
+
     _ttsService.speak(upload['Description']);
-   
+
     addMessage(
         id.toString(), 'assistant', upload['Description'], '', '', 'message');
   }
@@ -131,32 +137,69 @@ class _HomePageState extends State<HomePage> {
         await _mediaUploader.uploadVideo(fileName, mimeType, appState);
     final id =
         await dbHelper.insertMessage(0, "assistant", upload['Description']);
-    if(upload['Danger'].startsWith("Yes")) await _beep.makeDangerAlert(); // makes danger alert after every response
-    await Future.delayed(const Duration(seconds: 1));
+    if (upload['Danger'].startsWith("Yes")) {
+      await _beep.makeDangerAlert(); // makes danger alert after every response
+      await Future.delayed(
+          const Duration(seconds: 1)); // make a delay after beep
+    }
     _ttsService.speak(upload['Description']);
-    
 
     addMessage(
         id.toString(), 'assistant', upload['Description'], '', '', 'message');
   }
 
+  // Future<void> getImage(BuildContext context, AppState appState) async {
+  //   fileName = await _mediaPicker.getImageCM(context, appState);
+  //   mimeType = lookupMimeType(fileName.path);
+  //   final path = await _mediaSaver.saveImage(fileName, mimeType);
+  //   addMessage(
+  //       path['id'].toString(), 'user', '', mimeType, path['path'], 'media');
+
+  //   Map<String, dynamic> upload =
+  //       await _mediaUploader.uploadImage(fileName, mimeType, appState);
+  //   final id = await dbHelper.insertMessage(0, "assistant", upload['Description']);
+  //   if(upload['Danger'].startsWith("Yes")){
+  //     await _beep.makeDangerAlert(); // makes danger alert after every response
+  //     await Future.delayed(const Duration(seconds: 1)); // make a delay after beep
+  //   }
+  //   _ttsService.speak(upload['Description']);
+
+  //   addMessage(
+  //       id.toString(), 'assistant', upload['Description'], '', '', 'message');
+  // }
+
   Future<void> getImage(BuildContext context, AppState appState) async {
-    fileName = await _mediaPicker.getImageCM(context, appState);
-    mimeType = lookupMimeType(fileName.path);
-    final path = await _mediaSaver.saveImage(fileName, mimeType);
-    addMessage(
-        path['id'].toString(), 'user', '', mimeType, path['path'], 'media');
+    try {
+      fileName = await _mediaPicker.getImageCM(context, appState);
+      mimeType = lookupMimeType(fileName.path);
+      final path = await _mediaSaver.saveImage(fileName, mimeType);
+      addMessage(
+          path['id'].toString(), 'user', '', mimeType, path['path'], 'media');
 
-    Map<String, dynamic> upload =
-        await _mediaUploader.uploadImage(fileName, mimeType, appState);
-    final id = await dbHelper.insertMessage(0, "assistant", upload['Description']);
-    if(upload['Danger'].startsWith("Yes")) await _beep.makeDangerAlert(); // makes danger alert after every response'
-    await Future.delayed(const Duration(seconds: 1));
-    _ttsService.speak(upload['Description']);
-      
+      Map<String, dynamic> upload =
+          await _mediaUploader.uploadImage(fileName, mimeType, appState);
+      final id =
+          await dbHelper.insertMessage(0, "assistant", upload['Description']);
+      if (upload['Danger'].startsWith("Yes")) {
+        await _beep
+            .makeDangerAlert(); // makes danger alert after every response
+        await Future.delayed(
+            const Duration(seconds: 1)); // make a delay after beep
+      }
+      _ttsService.speak(upload['Description']);
+      addMessage(
+          id.toString(), 'assistant', upload['Description'], '', '', 'message');
 
-    addMessage(
-        id.toString(), 'assistant', upload['Description'], '', '', 'message');
+      // Clear any previous error message
+      setState(() {
+        _errorMessage = null;
+      });
+    } catch (e) {
+      // Handle the error and display it
+      setState(() {
+        _errorMessage = "Failed to upload image: $e";
+      });
+    }
   }
 
   Future<void> addMessage(final id, final role, final content, final mimeType,
