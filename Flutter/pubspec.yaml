@@ -52,6 +52,7 @@ dependencies:
   video_player: ^2.2.5
   camera: ^0.11.0+1
   volume_watcher: ^2.0.1
+  flutter_tts: ^4.0.2
 
 dev_dependencies:
   flutter_test:
