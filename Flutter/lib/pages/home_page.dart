@@ -40,7 +40,7 @@ class _HomePageState extends State<HomePage> {
   final MediaPicker _mediaPicker = MediaPicker();
   final MediaSaver _mediaSaver = MediaSaver();
   final MediaUploader _mediaUploader = MediaUploader();
-  late File fileName;
+  late File? fileName;
   late String? mimeType;
   final TTSService _ttsService = TTSService();
   final BeepSound _beep = BeepSound();
@@ -84,6 +84,9 @@ class _HomePageState extends State<HomePage> {
 
   void _sendMessage() async {
     String message = _controller.text.trim();
+    if (fileName == null){
+      return;
+    }
     if (message.isNotEmpty) {
       final id = await dbHelper.insertMessage(conversationId, 'user', message);
       developer.log('Message sent to database: $message');
@@ -102,10 +105,13 @@ class _HomePageState extends State<HomePage> {
   Future<void> getMedia(BuildContext context, AppState appState) async {
     Map<String, dynamic> upload = {};
     fileName = await _mediaPicker.pickMedia(context, appState);
+    if (fileName == null) {
+      return;
+    }
     if (flag) {
       conversationId = await dbHelper.insertConversation();
     }
-    mimeType = lookupMimeType(fileName.path);
+    mimeType = lookupMimeType(fileName!.path);
     if (mimeType != null && mimeType!.startsWith('image')) {
       final image =
           await _mediaSaver.saveImage(fileName, mimeType, conversationId);
@@ -139,10 +145,13 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> getVideo(BuildContext context, AppState appState) async {
     fileName = await _mediaPicker.getVideoFile(context, appState);
+    if(fileName == null){
+      return;
+    }
     if (flag) {
       conversationId = await dbHelper.insertConversation();
     }
-    mimeType = lookupMimeType(fileName.path);
+    mimeType = lookupMimeType(fileName!.path);
     final path =
         await _mediaSaver.saveVideo(fileName, mimeType, conversationId);
     addMessage(
@@ -169,10 +178,13 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> getImage(BuildContext context, AppState appState) async {
     fileName = await _mediaPicker.getImageCM(context, appState);
+    if(fileName == null){
+      return;
+    }
     if (flag) {
       conversationId = await dbHelper.insertConversation();
     }
-    mimeType = lookupMimeType(fileName.path);
+    mimeType = lookupMimeType(fileName!.path);
     final path =
         await _mediaSaver.saveImage(fileName, mimeType, conversationId);
     addMessage(
