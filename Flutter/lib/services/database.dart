@@ -26,7 +26,7 @@ class DatabaseHelper {
     // Create tables
     await db.execute('''
       CREATE TABLE Conversations (
-        conversation_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        conversation_id INTEGER PRIMARY KEY AUTOINCREMENT CHECK (conversation_id >= 0),
         title TEXT,
         timestamp DATE DEFAULT (datetime('now','localtime'))
       )
@@ -90,10 +90,20 @@ class DatabaseHelper {
     return messages;
   }
 
-  Future<int> insertConversation(String title) async {
+  Future<int> insertConversation() async {
     Database db = await instance.database;
-    return await db.insert('Conversations', {'title': title});
+    return await db.insert('Conversations', {},nullColumnHack: 'title');
   }
+
+Future<int> updateConversationWithId(String title, int conversationId) async {
+  Database db = await instance.database;
+  return await db.update(
+    'Conversations', 
+    {'title': title},
+    where: 'conversation_id = ?', 
+    whereArgs: [conversationId]
+  );
+}
 
   Future<int> insertMessage(
       int conversationId, String role, String content) async {
