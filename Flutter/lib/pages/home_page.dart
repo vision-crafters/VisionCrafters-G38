@@ -1,4 +1,3 @@
-import 'dart:async'; // Add this import for the Timer
 import 'dart:io';
 import 'package:flutterbasics/services/flutter_tts.dart'; // for tts check in services folder
 import 'package:mime/mime.dart';
@@ -82,8 +81,8 @@ class _HomePageState extends State<HomePage> {
     setState(() {});
   }
 
-  void _sendMessage() async {
-    String message = _controller.text.trim();
+  void _sendMessage(String text) async {
+    String message = text.trim();
     if (fileName == null){
       return;
     }
@@ -369,13 +368,19 @@ class _HomePageState extends State<HomePage> {
                     FloatingActionButton(
                       onPressed: _isFocused
                           ? () {
-                              _sendMessage();
+                              _sendMessage(_controller.text);
                               FocusScope.of(context).unfocus();
                             }
                           : () {
                               showDialog(
                                 context: context,
-                                builder: (context) => const Speech(),
+                                builder: (context) => Speech(
+                                  onSpeechResult: (result) {
+                                    _sendMessage(
+                                        result); // Pass speech result to sendMessage
+                                    Navigator.pop(context);
+                                  },
+                                ),
                               );
                             },
                       child: Icon(_isFocused ? Icons.send : Icons.mic),
