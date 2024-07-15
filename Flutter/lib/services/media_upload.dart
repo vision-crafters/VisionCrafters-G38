@@ -12,7 +12,12 @@ class MediaUploader {
 
   //function with parameters, used for uploading images
   Future<Map<String, dynamic>> uploadImage(
-      File imageFile, String? mimeType, AppState appState) async {
+      File? imageFile, String? mimeType, AppState appState) async {
+    if (imageFile == null) {
+      developer.log('Image file is null');
+      throw Exception('Image file is null');
+    }
+    
     appState.setSpinnerVisibility(
         true); //before uploading the spinner will be turned on.
 
@@ -53,7 +58,12 @@ class MediaUploader {
 //This function is used to upload videos
 //to the Firebase Cloud Storage and then to the Firebase Cloud Function.
   Future<Map<String, dynamic>> uploadVideo(
-      File videoFile, String? mimeType, AppState appState) async {
+      File? videoFile, String? mimeType, AppState appState) async {
+    if (videoFile == null) {
+      developer.log('Video file is null');
+      throw Exception('Video file is null');
+    }
+
     appState.setSpinnerVisibility(
         true); //before uploading the spinner will be turned on.
 
@@ -93,8 +103,13 @@ class MediaUploader {
     }
   }
 
-  Future<dynamic> uploadQuery(List<Map<String, dynamic>> messages, File file,
+  Future<dynamic> uploadQuery(List<Map<String, dynamic>> messages, File? file,
       String? mimeType, String query) async {
+    if (file == null) {
+      developer.log('File is null');
+      throw Exception('File is null');
+    }
+
     List<Map<String, dynamic>> conversation = getChatHistory(messages);
     developer.log(conversation.toString());
     if (mimeType != null && mimeType.startsWith('image')) {
@@ -133,7 +148,7 @@ class MediaUploader {
         developer.log("Failed to upload query for video.");
         throw Exception('Failed to upload query for video.');
       }
-    } else{
+    } else {
       developer.log('Unsupported file format');
       throw Exception('Unsupported file format');
     }
