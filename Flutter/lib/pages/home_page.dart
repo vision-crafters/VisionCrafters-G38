@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:flutterbasics/services/flutter_tts.dart'; // for tts check in services folder
 import 'package:mime/mime.dart';
 import 'package:flutter/material.dart';
@@ -47,7 +46,7 @@ class _HomePageState extends State<HomePage> {
   late File fileName;
   late String? mimeType;
   final TTSService _ttsService = TTSService();
-    final ScrollController _scrollController =
+  final ScrollController _scrollController =
       ScrollController(); // Add this line
 
   @override
@@ -79,8 +78,8 @@ class _HomePageState extends State<HomePage> {
     setState(() {});
   }
 
-  void _sendMessage() async {
-    String message = _controller.text.trim();
+  void _sendMessage(String text) async {
+    String message = text.trim();
     if (message.isNotEmpty) {
       final id = await dbHelper.insertMessage(0, 'user', message);
       developer.log('Message sent to database: $message');
@@ -93,7 +92,7 @@ class _HomePageState extends State<HomePage> {
       _ttsService.speak(response['Description']);
       addMessage(id2, 'assistant', response['Description'], '', '', 'message');
     }
-    _scrollToBottom(); // Scroll to the bottom after sending a message
+    _scrollToBottom();
   }
 
   Future<void> getMedia(BuildContext context, AppState appState) async {
@@ -152,6 +151,7 @@ class _HomePageState extends State<HomePage> {
 
     final id =
         await dbHelper.insertMessage(0, "assistant", upload['Description']);
+    _ttsService.speak(upload['Description']);
     addMessage(
         id.toString(), 'assistant', upload['Description'], '', '', 'message');
     _scrollToBottom(); // Scroll to the bottom after sending a message
@@ -189,6 +189,9 @@ class _HomePageState extends State<HomePage> {
     //Builds the UI of the home page
     final appState = Provider.of<AppState>(context);
     return GestureDetector(
+      onTap: () {
+        FocusScope.of(context).unfocus();
+      },
       onDoubleTap: () {
         getImage(context, appState);
       }, //Double tap gesture to open the camera
@@ -230,7 +233,6 @@ class _HomePageState extends State<HomePage> {
               //Displays the UI of the home page
               Expanded(
                 child: ListView.builder(
-                  
                   controller: _scrollController, // Attach ScrollController
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
@@ -330,21 +332,21 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                     FloatingActionButton(
-                      //Displays a microphone button for speech-to-text
                       onPressed: _isFocused
-                          ? _sendMessage
+                          ? () => _sendMessage(_controller.text)
                           : () {
                               showDialog(
-                                //Displays a dialog box for speech-to-text
-                                context: context, //Context for the dialog box
-                                builder: (context) =>
-                                    const Speech(), //Speech dialog box
-                                // will be opened up when the microphone button is pressed
+                                context: context,
+                                builder: (context) => Speech(
+                                  onSpeechResult: (result) {
+                                    _sendMessage(
+                                        result); // Pass speech result to sendMessage
+                                    Navigator.pop(context);
+                                  },
+                                ),
                               );
                             },
-                      child: Icon(_isFocused
-                          ? Icons.send
-                          : Icons.mic), // Icon for the microphone button
+                      child: Icon(_isFocused ? Icons.send : Icons.mic),
                     ),
                   ], //end of children
                 ),
@@ -359,4 +361,3 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
-git branch
