@@ -84,7 +84,7 @@ class _HomePageState extends State<HomePage> {
 
   void _sendMessage() async {
     String message = _controller.text.trim();
-    if (fileName == null){
+    if (fileName == null) {
       return;
     }
     if (message.isNotEmpty) {
@@ -145,7 +145,7 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> getVideo(BuildContext context, AppState appState) async {
     fileName = await _mediaPicker.getVideoFile(context, appState);
-    if(fileName == null){
+    if (fileName == null) {
       return;
     }
     if (flag) {
@@ -178,7 +178,7 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> getImage(BuildContext context, AppState appState) async {
     fileName = await _mediaPicker.getImageCM(context, appState);
-    if(fileName == null){
+    if (fileName == null) {
       return;
     }
     if (flag) {
@@ -282,7 +282,9 @@ class _HomePageState extends State<HomePage> {
         ),
         drawer: Drawer(
           width: MediaQuery.of(context).size.width * 0.8,
-          child: DashBoardScreen(),
+          child: DashBoardScreen(
+            database: widget.database,
+          ),
         ),
         body: ModalProgressHUD(
           // Displays a loading spinner when appState.showSpinner is true
