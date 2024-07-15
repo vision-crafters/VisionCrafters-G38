@@ -60,6 +60,12 @@ class DatabaseHelper {
     return await db.query('Conversations', orderBy: 'timestamp DESC');
   }
 
+  Future<String> getTitleByID(conversationId) async{
+    Database db = await instance.database;
+    List<Map<String, dynamic>> result = await db.query('Conversations', where: 'conversation_id = ?', whereArgs: [conversationId]);
+    return result[0]['title'];
+  }
+
   Future<List<Map<String, dynamic>>> getConversationData(
       int conversationId) async {
     Database db = await instance.database;
