@@ -84,7 +84,7 @@ class _HomePageState extends State<HomePage> {
 
   void _sendMessage(String text) async {
     String message = text.trim();
-    _ttsService.speak(message);
+    
     if (fileName == null) {
       return;
     }
