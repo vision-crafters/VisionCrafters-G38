@@ -19,6 +19,7 @@ import 'package:flutterbasics/services/media_upload.dart';
 import 'package:flutterbasics/providers/app_state.dart';
 import 'dart:developer' as developer;
 import 'package:flutterbasics/services/beep_sound.dart';
+import 'package:flutterbasics/widgets/dialog_box.dart';
 
 class HomePage extends StatefulWidget {
   final Database database;
@@ -83,22 +84,30 @@ class _HomePageState extends State<HomePage> {
 
   void _sendMessage(String text) async {
     String message = text.trim();
-    if (fileName == null){
+    _ttsService.speak(message);
+    if (fileName == null) {
       return;
     }
     if (message.isNotEmpty) {
-      final id = await dbHelper.insertMessage(conversationId, 'user', message);
-      developer.log('Message sent to database: $message');
-      _controller.clear();
-      addMessage(id, 'user', message, '', '', 'message');
-      final response = await _mediaUploader.uploadQuery(
-          messages, fileName, mimeType, message);
-      final id2 = await dbHelper.insertMessage(
-          conversationId, 'assistant', response['Description']);
-      _ttsService.speak(response['Description']);
-      addMessage(id2, 'assistant', response['Description'], '', '', 'message');
+      try {
+        final id =
+            await dbHelper.insertMessage(conversationId, 'user', message);
+        developer.log('Message sent to database: $message');
+        _controller.clear();
+        addMessage(id, 'user', message, '', '', 'message');
+        final response = await _mediaUploader.uploadQuery(
+            messages, fileName, mimeType, message);
+        final id2 = await dbHelper.insertMessage(
+            conversationId, 'assistant', response['Description']);
+        _ttsService.speak(response['Description']);
+        addMessage(
+            id2, 'assistant', response['Description'], '', '', 'message');
+        _scrollToBottom(); // Scroll to the bottom after sending a message
+      } catch (e) {
+        DialogBox.showErrorDialog(context, 'Message Send Failed',
+            'The message could not be sent. Please try again.');
+      }
     }
-    _scrollToBottom(); // Scroll to the bottom after sending a message
   }
 
   Future<void> getMedia(BuildContext context, AppState appState) async {
@@ -110,36 +119,43 @@ class _HomePageState extends State<HomePage> {
     if (flag) {
       conversationId = await dbHelper.insertConversation();
     }
-    mimeType = lookupMimeType(fileName!.path);
-    if (mimeType != null && mimeType!.startsWith('image')) {
-      final image =
-          await _mediaSaver.saveImage(fileName, mimeType, conversationId);
-      addMessage(image['id'], 'user', '', mimeType, image['path'], 'media');
+    try {
+      mimeType = lookupMimeType(fileName!.path);
+      if (mimeType != null && mimeType!.startsWith('image')) {
+        final image =
+            await _mediaSaver.saveImage(fileName, mimeType, conversationId);
+        addMessage(image['id'], 'user', '', mimeType, image['path'], 'media');
 
-      upload = await _mediaUploader.uploadImage(fileName, mimeType, appState);
-    } else if (mimeType != null && mimeType!.startsWith('video')) {
-      final video =
-          await _mediaSaver.saveVideo(fileName, mimeType, conversationId);
+        upload = await _mediaUploader.uploadImage(fileName, mimeType, appState);
+      } else if (mimeType != null && mimeType!.startsWith('video')) {
+        final video =
+            await _mediaSaver.saveVideo(fileName, mimeType, conversationId);
+        addMessage(video['id'].toString(), 'user', '', mimeType, video['path'],
+            'media');
+
+        upload = await _mediaUploader.uploadVideo(fileName, mimeType, appState);
+      }
+      final id = await dbHelper.insertMessage(
+          conversationId, "assistant", upload['Description']);
       addMessage(
-          video['id'].toString(), 'user', '', mimeType, video['path'], 'media');
-
-      upload = await _mediaUploader.uploadVideo(fileName, mimeType, appState);
+          id.toString(), 'assistant', upload['Description'], '', '', 'message');
+      if (flag) {
+        dbHelper.updateConversationWithId(upload['Title'], conversationId);
+        flag = false;
+      }
+      if (upload['Danger'].startsWith("Yes")) {
+        await _beep
+            .makeDangerAlert(); // makes danger alert after every response
+        await Future.delayed(
+            const Duration(seconds: 1)); // make a delay after beep
+      }
+      _ttsService.speak(upload['Description']);
+      _scrollToBottom(); // Scroll to the bottom after sending a message
+    } catch (e) {
+      appState.setSpinnerVisibility(false);
+      DialogBox.showErrorDialog(context, 'Media Upload Failed',
+          'The image could not be uploaded from media. Please try again.');
     }
-    final id = await dbHelper.insertMessage(
-        conversationId, "assistant", upload['Description']);
-    addMessage(
-        id.toString(), 'assistant', upload['Description'], '', '', 'message');
-    if (flag) {
-      dbHelper.updateConversationWithId(upload['Title'], conversationId);
-      flag = false;
-    }
-    if (upload['Danger'].startsWith("Yes")) {
-      await _beep.makeDangerAlert(); // makes danger alert after every response
-      await Future.delayed(
-          const Duration(seconds: 1)); // make a delay after beep
-    }
-    _ttsService.speak(upload['Description']);
-    _scrollToBottom(); // Scroll to the bottom after sending a message
   }
 
   Future<void> getVideo(BuildContext context, AppState appState) async {
@@ -150,29 +166,36 @@ class _HomePageState extends State<HomePage> {
     if (flag) {
       conversationId = await dbHelper.insertConversation();
     }
-    mimeType = lookupMimeType(fileName!.path);
-    final path =
-        await _mediaSaver.saveVideo(fileName, mimeType, conversationId);
-    addMessage(
-        path['id'].toString(), 'user', '', mimeType, path['path'], 'media');
+    try {
+      mimeType = lookupMimeType(fileName!.path);
+      final path =
+          await _mediaSaver.saveVideo(fileName, mimeType, conversationId);
+      addMessage(
+          path['id'].toString(), 'user', '', mimeType, path['path'], 'media');
 
-    Map<String, dynamic> upload =
-        await _mediaUploader.uploadVideo(fileName, mimeType, appState);
-    final id = await dbHelper.insertMessage(
-        conversationId, "assistant", upload['Description']);
-    addMessage(
-        id.toString(), 'assistant', upload['Description'], '', '', 'message');
-    if (flag) {
-      dbHelper.updateConversationWithId(upload['Title'], conversationId);
-      flag = false;
+      Map<String, dynamic> upload =
+          await _mediaUploader.uploadVideo(fileName, mimeType, appState);
+      final id = await dbHelper.insertMessage(
+          conversationId, "assistant", upload['Description']);
+      addMessage(
+          id.toString(), 'assistant', upload['Description'], '', '', 'message');
+      if (flag) {
+        dbHelper.updateConversationWithId(upload['Title'], conversationId);
+        flag = false;
+      }
+      if (upload['Danger'].startsWith("Yes")) {
+        await _beep
+            .makeDangerAlert(); // makes danger alert after every response
+        await Future.delayed(
+            const Duration(seconds: 1)); // make a delay after beep
+      }
+      _ttsService.speak(upload['Description']);
+      _scrollToBottom();
+    } catch (e) {
+      appState.setSpinnerVisibility(false);
+      DialogBox.showErrorDialog(context, 'Video Upload Failed',
+          'The video could not be uploaded. Please try again.');
     }
-    if (upload['Danger'].startsWith("Yes")) {
-      await _beep.makeDangerAlert(); // makes danger alert after every response
-      await Future.delayed(
-          const Duration(seconds: 1)); // make a delay after beep
-    }
-    _ttsService.speak(upload['Description']);
-    _scrollToBottom();
   }
 
   Future<void> getImage(BuildContext context, AppState appState) async {
@@ -183,29 +206,36 @@ class _HomePageState extends State<HomePage> {
     if (flag) {
       conversationId = await dbHelper.insertConversation();
     }
-    mimeType = lookupMimeType(fileName!.path);
-    final path =
-        await _mediaSaver.saveImage(fileName, mimeType, conversationId);
-    addMessage(
-        path['id'].toString(), 'user', '', mimeType, path['path'], 'media');
+    try {
+      mimeType = lookupMimeType(fileName!.path);
+      final path =
+          await _mediaSaver.saveImage(fileName, mimeType, conversationId);
+      addMessage(
+          path['id'].toString(), 'user', '', mimeType, path['path'], 'media');
 
-    Map<String, dynamic> upload =
-        await _mediaUploader.uploadImage(fileName, mimeType, appState);
-    final id = await dbHelper.insertMessage(
-        conversationId, "assistant", upload['Description']);
-    addMessage(
-        id.toString(), 'assistant', upload['Description'], '', '', 'message');
-    if (flag) {
-      dbHelper.updateConversationWithId(upload['Title'], conversationId);
-      flag = false;
+      Map<String, dynamic> upload =
+          await _mediaUploader.uploadImage(fileName, mimeType, appState);
+      final id = await dbHelper.insertMessage(
+          conversationId, "assistant", upload['Description']);
+      addMessage(
+          id.toString(), 'assistant', upload['Description'], '', '', 'message');
+      if (flag) {
+        dbHelper.updateConversationWithId(upload['Title'], conversationId);
+        flag = false;
+      }
+      if (upload['Danger'].startsWith("Yes")) {
+        await _beep
+            .makeDangerAlert(); // makes danger alert after every response
+        await Future.delayed(
+            const Duration(seconds: 1)); // make a delay after beep
+      }
+      _ttsService.speak(upload['Description']);
+      _scrollToBottom(); // Scroll to the bottom after sending a message
+    } catch (e) {
+      appState.setSpinnerVisibility(false);
+      DialogBox.showErrorDialog(context, 'Image Upload Failed',
+          'The image could not be uploaded. Please try again.');
     }
-    if (upload['Danger'].startsWith("Yes")) {
-      await _beep.makeDangerAlert(); // makes danger alert after every response
-      await Future.delayed(
-          const Duration(seconds: 1)); // make a delay after beep
-    }
-    _ttsService.speak(upload['Description']);
-    _scrollToBottom(); // Scroll to the bottom after sending a message
   }
 
   Future<void> addMessage(final id, final role, final content, final mimeType,
