@@ -83,7 +83,7 @@ class _HomePageState extends State<HomePage> {
 
   void _sendMessage(String text) async {
     String message = text.trim();
-    if (fileName == null){
+    if (fileName == null) {
       return;
     }
     if (message.isNotEmpty) {
@@ -248,7 +248,12 @@ class _HomePageState extends State<HomePage> {
       onLongPress: () {
         showDialog(
           context: context,
-          builder: (context) => const Speech(),
+          builder: (context) => Speech(
+            onSpeechResult: (result) {
+              _sendMessage(result); // Pass speech result to sendMessage
+              Navigator.pop(context);
+            },
+          ),
         );
       },
       child: Scaffold(
