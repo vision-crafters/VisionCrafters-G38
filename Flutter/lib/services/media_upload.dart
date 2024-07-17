@@ -36,7 +36,7 @@ class MediaUploader {
     //the Base64-encoded image and the MIME type of the image file, respectively.
     //response is stored in the response variable
     final response =
-        await FirebaseFunctions.instance.httpsCallable('image').call({
+        await FirebaseFunctions.instance.httpsCallable('image', options: HttpsCallableOptions(timeout: const Duration(seconds: 120))).call({
       'data': base64Image,
       'mime_type': mimeType,
     });
@@ -84,7 +84,7 @@ class MediaUploader {
     //the video download url and the MIME type of the video file, respectively.
     //response is stored in the response variable
     final response =
-        await FirebaseFunctions.instance.httpsCallable('video').call({
+        await FirebaseFunctions.instance.httpsCallable('video', options: HttpsCallableOptions(timeout: const Duration(seconds: 180))).call({
       'data': videoUrl,
       'mime_type': mimeType,
     });
@@ -116,7 +116,7 @@ class MediaUploader {
       final bytes = await file.readAsBytes();
       final base64Image = base64Encode(bytes);
       final response =
-          await FirebaseFunctions.instance.httpsCallable('image').call({
+          await FirebaseFunctions.instance.httpsCallable('image', options: HttpsCallableOptions(timeout: const Duration(seconds: 120))).call({
         'data': base64Image,
         'mime_type': mimeType,
         'query': conversation,
@@ -135,7 +135,7 @@ class MediaUploader {
       await fileRef.putFile(file);
       final videoUrl = await fileRef.getDownloadURL();
       final response =
-          await FirebaseFunctions.instance.httpsCallable('video').call({
+          await FirebaseFunctions.instance.httpsCallable('video', options: HttpsCallableOptions(timeout: const Duration(seconds: 180))).call({
         'data': videoUrl,
         'mime_type': mimeType,
         'query': conversation,

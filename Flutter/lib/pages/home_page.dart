@@ -101,6 +101,8 @@ class _HomePageState extends State<HomePage> {
             messages, fileName, mimeType, message);
         final id2 = await dbHelper.insertMessage(
             conversationId, 'assistant', response['Description']);
+        _ttsService.setSpeechRate(0.6);
+        _ttsService.setLanguage("hi-IN");
         _ttsService.speak(response['Description']);
         addMessage(
             id2, 'assistant', response['Description'], '', '', 'message');
@@ -295,7 +297,12 @@ class _HomePageState extends State<HomePage> {
       onLongPress: () {
         showDialog(
           context: context,
-          builder: (context) => const Speech(),
+          builder: (context) => Speech(
+            onSpeechResult: (result) {
+              _sendMessage(result); // Pass speech result to sendMessage
+              Navigator.pop(context);
+            },
+          ),
         );
       },
       child: Scaffold(
