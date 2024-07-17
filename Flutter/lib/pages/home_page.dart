@@ -40,8 +40,8 @@ class _HomePageState extends State<HomePage> {
   final MediaPicker _mediaPicker = MediaPicker();
   final MediaSaver _mediaSaver = MediaSaver();
   final MediaUploader _mediaUploader = MediaUploader();
-  late File? fileName;
-  late String? mimeType;
+  late File? fileName = null;
+  late String? mimeType = null;
   final TTSService _ttsService = TTSService();
   final BeepSound _beep = BeepSound();
   int conversationId = -1;
@@ -84,8 +84,10 @@ class _HomePageState extends State<HomePage> {
 
   void _sendMessage(String text) async {
     String message = text.trim();
-    
     if (fileName == null) {
+      DialogBox.showErrorDialog(context, 'No File Selected',
+          'Please select a image/video before sending a message.');
+      _controller.clear(); // to clear the text box after displaying the error
       return;
     }
     if (message.isNotEmpty) {
@@ -125,16 +127,17 @@ class _HomePageState extends State<HomePage> {
         final image =
             await _mediaSaver.saveImage(fileName, mimeType, conversationId);
         addMessage(image['id'], 'user', '', mimeType, image['path'], 'media');
-
         upload = await _mediaUploader.uploadImage(fileName, mimeType, appState);
       } else if (mimeType != null && mimeType!.startsWith('video')) {
         final video =
             await _mediaSaver.saveVideo(fileName, mimeType, conversationId);
         addMessage(video['id'].toString(), 'user', '', mimeType, video['path'],
             'media');
-
         upload = await _mediaUploader.uploadVideo(fileName, mimeType, appState);
+      } else {
+        throw Exception('Unsupported media type');
       }
+
       final id = await dbHelper.insertMessage(
           conversationId, "assistant", upload['Description']);
       addMessage(
@@ -149,12 +152,22 @@ class _HomePageState extends State<HomePage> {
         await Future.delayed(
             const Duration(seconds: 1)); // make a delay after beep
       }
+      _ttsService.setSpeechRate(0.6);
+      _ttsService.setLanguage("hi-IN");
       _ttsService.speak(upload['Description']);
       _scrollToBottom(); // Scroll to the bottom after sending a message
     } catch (e) {
       appState.setSpinnerVisibility(false);
-      DialogBox.showErrorDialog(context, 'Media Upload Failed',
-          'The image could not be uploaded from media. Please try again.');
+      if (mimeType != null && mimeType!.startsWith('image')) {
+        DialogBox.showErrorDialog(context, 'Image Upload Failed',
+            'The image could not be uploaded from media. Please try again.');
+      } else if (mimeType != null && mimeType!.startsWith('video')) {
+        DialogBox.showErrorDialog(context, 'Video Upload Failed',
+            'The video could not be uploaded from media. Please try again.');
+      } else {
+        DialogBox.showErrorDialog(context, 'Media Upload Failed',
+            'The media could not be uploaded. Please try again.');
+      }
     }
   }
 
@@ -189,6 +202,8 @@ class _HomePageState extends State<HomePage> {
         await Future.delayed(
             const Duration(seconds: 1)); // make a delay after beep
       }
+      _ttsService.setSpeechRate(0.6);
+      _ttsService.setLanguage("hi-IN");
       _ttsService.speak(upload['Description']);
       _scrollToBottom();
     } catch (e) {
@@ -229,6 +244,8 @@ class _HomePageState extends State<HomePage> {
         await Future.delayed(
             const Duration(seconds: 1)); // make a delay after beep
       }
+      _ttsService.setSpeechRate(0.6);
+      _ttsService.setLanguage("hi-IN");
       _ttsService.speak(upload['Description']);
       _scrollToBottom(); // Scroll to the bottom after sending a message
     } catch (e) {
