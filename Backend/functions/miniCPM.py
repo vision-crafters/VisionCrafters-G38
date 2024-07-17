@@ -8,7 +8,7 @@ URL=os.getenv("API")+"/api/invoke/"
 def imageWithMiniCPM(messages:list,data:str,mime_type:str)->dict:
     prompts={
         "Danger":
-            '''Is there any medium or high-risk hazard in the image that a visually impaired user should be aware of? For example:
+            '''Answer as a Yes/No. Is there any medium or high-risk hazard in the image that a visually impaired user should be aware of? For example:
 
                     1. Obstacles on the ground, such as uneven pavement, steps, or debris.
                     2. Fast-moving vehicles, like cars, bicycles, or scooters.
@@ -22,7 +22,9 @@ def imageWithMiniCPM(messages:list,data:str,mime_type:str)->dict:
                     10. Loud noises that could indicate an approaching hazard, like sirens, alarms, or construction sounds.
 
             Please respond with 'Yes' or 'No' to indicate if any of these hazards are present in the image. Please only respond with 'Yes' or 'No'.''',
-        "Title":"Provide a suitable title for the image.",
+        "Title":'''Provide a suitable title for the image. Give only the title. Examples of the response: 
+                    Busy Street with Unmarked Construction Area
+                    Cozy Coffee Shop''',
         "Description":"Describe the image in detail, focusing on key elements. Limit your description to 40 to 50 words."
     }
 
@@ -53,25 +55,28 @@ def imageWithMiniCPM(messages:list,data:str,mime_type:str)->dict:
         response["Description"]=res["output"]
     print(response)
     return response
+
 def videoWithMiniCPM(messages:list,data:str,mime_type:str)->dict:
     prompts={
         "Danger":
-            '''Is there any medium or high-risk hazard in the video that a visually impaired user should be aware of? For example:
+            '''Answer as a Yes/No. Is there any medium or high-risk hazard in the video that a visually impaired user should be aware of? For example:
 
-                        1. Obstacles on the ground, such as uneven pavement, steps, or debris.
-                        2. Fast-moving vehicles, like cars, bicycles, or scooters.
-                        3. Open flames or hot surfaces, such as candles, stoves, or bonfires.
-                        4. Sharp objects, including broken glass, tools, or exposed nails.
-                        5. Slippery surfaces, like wet floors, ice, or oil spills.
-                        6. Electrical hazards, such as exposed wires or malfunctioning equipment.
-                        7. Falling objects, such as unstable shelves, tree branches, or construction materials.
-                        8. Bodies of water, like pools, ponds, or streams.
-                        9. Animals, particularly aggressive dogs or wildlife.
-                        10. Loud noises that could indicate an approaching hazard, like sirens, alarms, or construction sounds.
+                    1. Obstacles on the ground, such as uneven pavement, steps, or debris.
+                    2. Fast-moving vehicles, like cars, bicycles, or scooters.
+                    3. Open flames or hot surfaces, such as candles, stoves, or bonfires.
+                    4. Sharp objects, including broken glass, tools, or exposed nails.
+                    5. Slippery surfaces, like wet floors, ice, or oil spills.
+                    6. Electrical hazards, such as exposed wires or malfunctioning equipment.
+                    7. Falling objects, such as unstable shelves, tree branches, or construction materials.
+                    8. Bodies of water, like pools, ponds, or streams.
+                    9. Animals, particularly aggressive dogs or wildlife.
+                    10. Loud noises that could indicate an approaching hazard, like sirens, alarms, or construction sounds.
 
                 Please respond with 'Yes' or 'No' to indicate if any of these hazards are present in the image. Please only respond with 'Yes' or 'No'.''',
 
-        "Title":"Provide a suitable title for the video.",
+        "Title":'''Provide a suitable title for the image. Give only the title. Examples of the response: 
+                    Busy Street with Unmarked Construction Area
+                    Cozy Coffee Shop''',
         "Description":"Describe the video in detail, focusing on key elements. Limit your description to 40 to 50 words."
     }
     response={}

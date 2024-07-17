@@ -13,7 +13,7 @@ from miniCPM import *
 from gemini import *
 #function to query the model with the image and the user query using RAG
 
-@https_fn.on_call(timeout_sec=120)
+@https_fn.on_call(timeout_sec=180)
 def rag_image(req: https_fn.CallableRequest):
     response={}
     messages=req.data.get('query')
@@ -28,7 +28,7 @@ def rag_image(req: https_fn.CallableRequest):
 
 
 #function to query the model with the image and the user query
-@https_fn.on_call()
+@https_fn.on_call(timeout_sec=120)
 def image(req: https_fn.CallableRequest):
     query = req.data.get('query') # Get the user query from the request
     data = req.data.get('data') # Get the image data from the request
