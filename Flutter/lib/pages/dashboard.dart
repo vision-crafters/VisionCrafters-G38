@@ -1,16 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:flutterbasics/pages/chat_screen.dart';
+import 'package:sqflite/sqflite.dart';
+import 'package:flutterbasics/services/database.dart';
+import 'dart:developer' as developer;
+import 'package:intl/intl.dart';
 
-class DashBoardScreen extends StatelessWidget {
-  final List<Map<String, String>> items = [
-    {"name": "Viishhnu", "time": "08:43", "role": "CR of our class"},
-    {"name": "Rishikesh", "time": "09:00", "role": "Topper"},
-    {"name": "Sainath", "time": "09:00", "role": "Leader"},
-    {"name": "Sai", "time": "09:00", "role": "Good"},
-    {"name": "Sai", "time": "09:00", "role": "Good"},
-    {"name": "Sai", "time": "09:00", "role": "Good"},
-    {"name": "Sai", "time": "09:00", "role": "Good"},
-  ];
+class DashBoardScreen extends StatefulWidget {
+  final Database database;
+
+  const DashBoardScreen({Key? key, required this.database}) : super(key: key);
+
+  @override
+  _DashBoardState createState() => _DashBoardState();
+}
+
+class _DashBoardState extends State<DashBoardScreen> {
+  late Database database;
+  final DatabaseHelper dbHelper = DatabaseHelper.instance;
+  List<Map<String, dynamic>> conversations = [];
+
+  Future<void> _load() async {
+    List<Map<String, dynamic>> items = await dbHelper.getAllConversations();
+    conversations = List<Map<String, dynamic>>.from(items);
+    developer.log('Conversations: ${conversations.toString()}');
+    setState(() {});
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,15 +67,20 @@ class DashBoardScreen extends StatelessWidget {
                 ),
               ),
               child: ListView.builder(
-                itemCount: items.length,
+                itemCount: conversations.length,
                 itemBuilder: (BuildContext context, int index) {
-                  final item = items[index];
+                  final item = conversations[index];
+                  String formattedTime = DateFormat('HH:mm')
+                      .format(DateTime.parse(item["timestamp"]));
                   return GestureDetector(
                     onTap: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const ChatScreen(),
+                          builder: (context) => ChatScreen(
+                            database: widget.database,
+                            conversationId: item['conversation_id'],
+                          ),
                         ),
                       );
                     },
@@ -72,31 +97,34 @@ class DashBoardScreen extends StatelessWidget {
                               children: [
                                 Row(
                                   children: [
-                                    Text(
-                                      item["name"]!,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
+                                    Flexible(
+                                      flex: 3,
+                                      child: Text(
+                                        item["title"]!,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.bold,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
                                       ),
                                     ),
                                     const Spacer(),
-                                    Text(
-                                      item["time"]!,
-                                      style:
-                                          const TextStyle(color: Colors.white),
+                                    Flexible(
+                                      flex: 1,
+                                      child: Text(
+                                        formattedTime,
+                                        style: const TextStyle(
+                                            color: Colors.white),
+                                        textAlign: TextAlign.right,
+                                      ),
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 5),
-                                Text(
-                                  item["role"]!,
-                                  style: const TextStyle(color: Colors.white),
-                                ),
-                                // const Divider(
-                                //   color: Colors.black,
-                                //   thickness: 1,
-                                // )
+                                const Divider(
+                                  color: Colors.black,
+                                  thickness: 1,
+                                )
                               ],
                             ),
                           ),

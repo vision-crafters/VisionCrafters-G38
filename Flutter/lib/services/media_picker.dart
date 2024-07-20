@@ -7,14 +7,17 @@ import 'package:flutterbasics/pages/camera_preview_screen.dart';
 import 'package:flutterbasics/pages/video_recording_screen.dart';
 import 'package:camera/camera.dart';
 import 'package:video_player/video_player.dart';
+import 'package:flutterbasics/widgets/dialog_box.dart';
+import 'package:mime/mime.dart';
 
 class MediaPicker {
   final ImagePicker _picker = ImagePicker(); // Pick image or video from gallery
 
   // Pick image or video from gallery
   // by taking the choice and parameters from the user
-
-  Future<File> pickMedia(BuildContext context, AppState appState) async {
+  Future<File?> pickMedia(BuildContext context, AppState appState) async {
+    //dialog to give the user an option
+    //to select between an image or a video from the gallery
     final choice = await showDialog<String>(
       context: context,
       builder: (BuildContext context) {
@@ -36,8 +39,11 @@ class MediaPicker {
         );
       },
     );
-
-    if (choice != null) {
+    if(choice == null) {
+      developer.log("No choice selected");
+      return null;
+    }
+    else{
       XFile? pickedFile;
       if (choice == 'image') {
         pickedFile = await _picker.pickImage(
@@ -46,7 +52,8 @@ class MediaPicker {
           maxHeight: 1080,
           maxWidth: 1920,
         );
-      } else if (choice == 'video') {
+      } 
+      else if (choice == 'video') {
         pickedFile = await _picker.pickVideo(source: ImageSource.gallery);
 
         if (pickedFile != null) {
@@ -55,36 +62,39 @@ class MediaPicker {
           await videoPlayerController.initialize();
           if (videoPlayerController.value.duration.inSeconds > 10) {
             videoPlayerController.dispose();
-            showDialog(
-              context: context,
-              builder: (BuildContext context) {
-                return const AlertDialog(
-                  content: Text(
-                      'The selected video is longer than 10 seconds. Please choose a video of 10 seconds or less.'),
-                );
-              },
-            );
-            throw Exception(
+            appState.setSpinnerVisibility(false);
+            DialogBox.showErrorDialog(context, 'Video Length Error',
                 'The selected video is longer than 10 seconds. Please choose a video of 10 seconds or less.');
+            return null;
           }
           videoPlayerController.dispose();
         }
       }
 
       if (pickedFile != null) {
-        return File(pickedFile.path);
-      } else {
-        developer.log("No file selected");
-        throw Exception("No file selected");
+        final mimeType = lookupMimeType(pickedFile.path);
+        developer.log('Mime type: $mimeType');
+        if (mimeType != null && (mimeType.startsWith('image') || mimeType.startsWith('video'))) {
+          return File(pickedFile.path);
+        } 
+        else {
+          developer.log('Unsupported file format');
+          appState.setSpinnerVisibility(false);
+          // ignore: use_build_context_synchronously
+          DialogBox.showErrorDialog(context, 'Unsupported File Format',
+              'The selected file format is not supported. Please choose a supported file format.');
+        }
       }
-    } else {
-      developer.log("No choice selected");
-      throw Exception("No choice selected");
+      else {
+        developer.log("No file selected");
+        return null;
+      }
     }
+    return null; 
   }
 
 
-  Future<File> getImageCM(BuildContext context, AppState appState) async {
+  Future<File?> getImageCM(BuildContext context, AppState appState) async {
     final cameras = await availableCameras();
     final rearCamera = cameras.firstWhere(
         (camera) => camera.lensDirection == CameraLensDirection.back);
@@ -103,12 +113,14 @@ class MediaPicker {
 
     if (pickedFile != null) {
       return File(pickedFile.path);
+    }else{
+      developer.log("No image captured");
+      return null;
     }
-    throw Exception("No image captured");
   }
 
 //function for getting a video from the Camera by taking the required parameters.
-  Future<File> getVideoFile(BuildContext context, AppState appState) async {
+  Future<File?> getVideoFile(BuildContext context, AppState appState) async {
     final cameras = await availableCameras();
     final rearCamera = cameras.firstWhere(
         (camera) => camera.lensDirection == CameraLensDirection.back);
@@ -129,7 +141,7 @@ class MediaPicker {
       return File(pickedFile.path);
     } else {
       developer.log("No video captured");
-      throw Exception("No video captured");
+      return null;
     }
   }
 }
