@@ -1,29 +1,30 @@
+import 'dart:developer' as developer;
 import 'dart:io';
-import 'package:flutterbasics/services/flutter_tts.dart'; // for tts check in services folder
-import 'package:mime/mime.dart';
+
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
-import 'package:modal_progress_hud_nsn/modal_progress_hud_nsn.dart';
-import 'package:sqflite/sqflite.dart';
-import 'package:flutterbasics/widgets/message_bubble.dart';
-import 'package:flutterbasics/widgets/image_bubble.dart';
-import 'package:flutterbasics/widgets/video_bubble.dart';
-import 'package:flutterbasics/pages/speech_to_text.dart';
-import 'package:flutterbasics/pages/settings.dart';
 import 'package:flutterbasics/pages/dashboard.dart';
+import 'package:flutterbasics/pages/settings.dart';
+import 'package:flutterbasics/pages/speech_to_text.dart';
+import 'package:flutterbasics/providers/app_state.dart';
+import 'package:flutterbasics/services/beep_sound.dart';
 import 'package:flutterbasics/services/database.dart';
+import 'package:flutterbasics/services/flutter_tts.dart';
 import 'package:flutterbasics/services/media_picker.dart';
 import 'package:flutterbasics/services/media_saver.dart';
 import 'package:flutterbasics/services/media_upload.dart';
-import 'package:flutterbasics/providers/app_state.dart';
-import 'dart:developer' as developer;
-import 'package:flutterbasics/services/beep_sound.dart';
+import 'package:flutterbasics/widgets/image_bubble.dart';
+import 'package:flutterbasics/widgets/message_bubble.dart';
+import 'package:flutterbasics/widgets/video_bubble.dart';
+import 'package:mime/mime.dart';
+import 'package:modal_progress_hud_nsn/modal_progress_hud_nsn.dart';
+import 'package:provider/provider.dart';
+import 'package:sqflite/sqflite.dart';
 
 class HomePage extends StatefulWidget {
   final Database database;
 
-  const HomePage({super.key, required this.database});
+  const HomePage({Key? key, required this.database}) : super(key: key);
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -83,7 +84,7 @@ class _HomePageState extends State<HomePage> {
 
   void _sendMessage(String text) async {
     String message = text.trim();
-    if (fileName == null){
+    if (fileName == null) {
       return;
     }
     if (message.isNotEmpty) {
@@ -101,7 +102,7 @@ class _HomePageState extends State<HomePage> {
     _scrollToBottom(); // Scroll to the bottom after sending a message
   }
 
-  Future<void> getMedia(BuildContext context, AppState appState) async {
+  Future<void> getMedia(BuildContext context, AppState appState, DragStartDetails? details) async {
     Map<String, dynamic> upload = {};
     fileName = await _mediaPicker.pickMedia(context, appState);
     if (fileName == null) {
@@ -142,7 +143,8 @@ class _HomePageState extends State<HomePage> {
     _scrollToBottom(); // Scroll to the bottom after sending a message
   }
 
-  Future<void> getVideo(BuildContext context, AppState appState) async {
+  Future<void> getVideo(
+      BuildContext context, AppState appState, DragStartDetails? details) async {
     fileName = await _mediaPicker.getVideoFile(context, appState);
     if (fileName == null) {
       return;
@@ -226,7 +228,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _scrollToBottom() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance!.addPostFrameCallback((_) {
       _scrollController.animateTo(
         _scrollController.position.maxScrollExtent,
         duration: const Duration(milliseconds: 300),
@@ -251,22 +253,29 @@ class _HomePageState extends State<HomePage> {
           builder: (context) => const Speech(),
         );
       },
+      onVerticalDragStart: (DragStartDetails? details) {
+        getVideo(context, appState, details);
+      },
+      onHorizontalDragStart: (DragStartDetails details){
+        getMedia(context,appState,details);
+      },
       child: Scaffold(
         appBar: AppBar(
           title: const Text("Vision Crafters"),
           actions: [
             IconButton(
-                icon: const Icon(Icons.chat_bubble_outline_rounded),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => HomePage(
-                        database: widget.database,
-                      ),
+              icon: const Icon(Icons.chat_bubble_outline_rounded),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => HomePage(
+                      database: widget.database,
                     ),
-                  );
-                }),
+                  ),
+                );
+              },
+            ),
             IconButton(
               icon: const Icon(Icons.settings),
               onPressed: () {
@@ -326,30 +335,35 @@ class _HomePageState extends State<HomePage> {
                 padding: const EdgeInsets.all(8.0),
                 child: Row(
                   children: [
-                    FloatingActionButton(
-                      shape: const CircleBorder(),
-                      heroTag: "UniqueTag2",
-                      onPressed: () {},
-                      child: SpeedDial(
-                        animatedIcon: AnimatedIcons.menu_close,
-                        direction: SpeedDialDirection.up,
-                        children: [
-                          SpeedDialChild(
-                            shape: const CircleBorder(),
-                            child: const Icon(Icons.camera),
-                            onTap: () => getImage(context, appState),
-                          ),
-                          SpeedDialChild(
-                            shape: const CircleBorder(),
-                            child: const Icon(Icons.video_call),
-                            onTap: () => getVideo(context, appState),
-                          ),
-                          SpeedDialChild(
-                            shape: const CircleBorder(),
-                            child: const Icon(Icons.browse_gallery_sharp),
-                            onTap: () => getMedia(context, appState),
-                          ),
-                        ],
+                    GestureDetector(
+                      onTap: () {
+                        getVideo(context, appState, null); // Replace null with your details object if available
+                      },
+                      child: FloatingActionButton(
+                        shape: const CircleBorder(),
+                        heroTag: "UniqueTag2",
+                        onPressed: () {}, // onPressed is required but does not need to do anything
+                        child: SpeedDial(
+                          animatedIcon: AnimatedIcons.menu_close,
+                          direction: SpeedDialDirection.up,
+                          children: [
+                            SpeedDialChild(
+                              shape: const CircleBorder(),
+                              child: const Icon(Icons.camera),
+                              onTap: () => getImage(context, appState),
+                            ),
+                            SpeedDialChild(
+                              shape: const CircleBorder(),
+                              child: const Icon(Icons.video_call),
+                              onTap: () => getVideo(context, appState,null),
+                            ),
+                            SpeedDialChild(
+                              shape: const CircleBorder(),
+                              child: const Icon(Icons.browse_gallery_sharp),
+                              onTap: () => getMedia(context, appState, null),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                     Expanded(
