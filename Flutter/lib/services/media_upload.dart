@@ -1,9 +1,11 @@
-import 'dart:io';
 import 'dart:convert';
 import 'dart:developer' as developer;
-import 'package:firebase_storage/firebase_storage.dart';
+import 'dart:io';
+
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:uuid/uuid.dart';
+
 import '../providers/app_state.dart';
 import '../utils/chat_utils.dart';
 
@@ -104,12 +106,12 @@ class MediaUploader {
   }
 
   Future<dynamic> uploadQuery(List<Map<String, dynamic>> messages, File? file,
-      String? mimeType, String query) async {
+      String? mimeType, AppState appState) async {
     if (file == null) {
       developer.log('File is null');
       throw Exception('File is null');
     }
-
+appState.setSpinnerVisibility(true);
     List<Map<String, dynamic>> conversation = getChatHistory(messages);
     developer.log(conversation.toString());
     if (mimeType != null && mimeType.startsWith('image')) {
@@ -124,8 +126,10 @@ class MediaUploader {
       if (response.data != null) {
         final data = response.data;
         developer.log(data.toString());
+appState.setSpinnerVisibility(false);
         return data;
       } else {
+appState.setSpinnerVisibility(false);
         developer.log("Failed to upload query for image .");
         throw Exception('Failed to upload query for image.');
       }
@@ -142,13 +146,16 @@ class MediaUploader {
       });
       if (response.data != null) {
         final data = response.data;
+appState.setSpinnerVisibility(false);
         developer.log(data.toString());
         return data;
       } else {
+appState.setSpinnerVisibility(false);
         developer.log("Failed to upload query for video.");
         throw Exception('Failed to upload query for video.');
       }
     } else {
+appState.setSpinnerVisibility(false);
       developer.log('Unsupported file format');
       throw Exception('Unsupported file format');
     }

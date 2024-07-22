@@ -82,7 +82,7 @@ class _HomePageState extends State<HomePage> {
     setState(() {});
   }
 
-  void _sendMessage(String text) async {
+  void _sendMessage(String text, AppState appState) async {
     String message = text.trim();
     if (fileName == null) {
       return;
@@ -93,7 +93,7 @@ class _HomePageState extends State<HomePage> {
       _controller.clear();
       addMessage(id, 'user', message, '', '', 'message');
       final response = await _mediaUploader.uploadQuery(
-          messages, fileName, mimeType, message);
+          messages, fileName, mimeType, appState);
       final id2 = await dbHelper.insertMessage(
           conversationId, 'assistant', response['Description']);
       _ttsService.speak(response['Description']);
@@ -102,7 +102,7 @@ class _HomePageState extends State<HomePage> {
     _scrollToBottom(); // Scroll to the bottom after sending a message
   }
 
-  Future<void> getMedia(BuildContext context, AppState appState, DragStartDetails? details) async {
+  Future<void> getMedia(BuildContext context, AppState appState) async {
     Map<String, dynamic> upload = {};
     fileName = await _mediaPicker.pickMedia(context, appState);
     if (fileName == null) {
@@ -143,8 +143,8 @@ class _HomePageState extends State<HomePage> {
     _scrollToBottom(); // Scroll to the bottom after sending a message
   }
 
-  Future<void> getVideo(
-      BuildContext context, AppState appState, DragStartDetails? details) async {
+  Future<void> getVideo(BuildContext context, AppState appState,
+      DragStartDetails? details) async {
     fileName = await _mediaPicker.getVideoFile(context, appState);
     if (fileName == null) {
       return;
@@ -253,11 +253,8 @@ class _HomePageState extends State<HomePage> {
           builder: (context) => const Speech(),
         );
       },
-      onVerticalDragStart: (DragStartDetails? details) {
+      onHorizontalDragStart: (DragStartDetails? details) {
         getVideo(context, appState, details);
-      },
-      onHorizontalDragStart: (DragStartDetails details){
-        getMedia(context,appState,details);
       },
       child: Scaffold(
         appBar: AppBar(
@@ -335,35 +332,31 @@ class _HomePageState extends State<HomePage> {
                 padding: const EdgeInsets.all(8.0),
                 child: Row(
                   children: [
-                    GestureDetector(
-                      onTap: () {
-                        getVideo(context, appState, null); // Replace null with your details object if available
-                      },
-                      child: FloatingActionButton(
-                        shape: const CircleBorder(),
-                        heroTag: "UniqueTag2",
-                        onPressed: () {}, // onPressed is required but does not need to do anything
-                        child: SpeedDial(
-                          animatedIcon: AnimatedIcons.menu_close,
-                          direction: SpeedDialDirection.up,
-                          children: [
-                            SpeedDialChild(
-                              shape: const CircleBorder(),
-                              child: const Icon(Icons.camera),
-                              onTap: () => getImage(context, appState),
-                            ),
-                            SpeedDialChild(
-                              shape: const CircleBorder(),
-                              child: const Icon(Icons.video_call),
-                              onTap: () => getVideo(context, appState,null),
-                            ),
-                            SpeedDialChild(
-                              shape: const CircleBorder(),
-                              child: const Icon(Icons.browse_gallery_sharp),
-                              onTap: () => getMedia(context, appState, null),
-                            ),
-                          ],
-                        ),
+                    FloatingActionButton(
+                      shape: const CircleBorder(),
+                      heroTag: "UniqueTag2",
+                      onPressed:
+                          () {}, // onPressed is required but does not need to do anything
+                      child: SpeedDial(
+                        animatedIcon: AnimatedIcons.menu_close,
+                        direction: SpeedDialDirection.up,
+                        children: [
+                          SpeedDialChild(
+                            shape: const CircleBorder(),
+                            child: const Icon(Icons.camera),
+                            onTap: () => getImage(context, appState),
+                          ),
+                          SpeedDialChild(
+                            shape: const CircleBorder(),
+                            child: const Icon(Icons.video_call),
+                            onTap: () => getVideo(context, appState, null),
+                          ),
+                          SpeedDialChild(
+                            shape: const CircleBorder(),
+                            child: const Icon(Icons.browse_gallery_sharp),
+                            onTap: () => getMedia(context, appState),
+                          ),
+                        ],
                       ),
                     ),
                     Expanded(
@@ -384,7 +377,7 @@ class _HomePageState extends State<HomePage> {
                     FloatingActionButton(
                       onPressed: _isFocused
                           ? () {
-                              _sendMessage(_controller.text);
+                              _sendMessage(_controller.text, appState);
                               FocusScope.of(context).unfocus();
                             }
                           : () {
@@ -392,8 +385,8 @@ class _HomePageState extends State<HomePage> {
                                 context: context,
                                 builder: (context) => Speech(
                                   onSpeechResult: (result) {
-                                    _sendMessage(
-                                        result); // Pass speech result to sendMessage
+                                    _sendMessage(result,
+                                        appState); // Pass speech result to sendMessage
                                     Navigator.pop(context);
                                   },
                                 ),
