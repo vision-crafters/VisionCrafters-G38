@@ -1,9 +1,10 @@
+import 'dart:developer' as developer;
+
 import 'package:flutter/material.dart';
 import 'package:flutterbasics/pages/chat_screen.dart';
-import 'package:sqflite/sqflite.dart';
 import 'package:flutterbasics/services/database.dart';
-import 'dart:developer' as developer;
 import 'package:intl/intl.dart';
+import 'package:sqflite/sqflite.dart';
 
 class DashBoardScreen extends StatefulWidget {
   final Database database;
@@ -46,7 +47,7 @@ class _DashBoardState extends State<DashBoardScreen> {
                 children: [
                   CircleAvatar(
                     radius: 30,
-                    backgroundImage: AssetImage('assets/images/logo.jpg'),
+                    backgroundImage: AssetImage('assets/images/logo.png'),
                     backgroundColor: Colors.transparent,
                   ),
                 ],
