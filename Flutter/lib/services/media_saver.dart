@@ -2,7 +2,7 @@ import 'dart:io';
 import 'dart:developer' as developer;
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
-import 'package:flutterbasics/services/database.dart';
+import 'package:visioncrafters/services/database.dart';
 
 class MediaSaver {
   final DatabaseHelper dbHelper = DatabaseHelper.instance;

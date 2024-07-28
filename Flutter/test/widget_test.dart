@@ -7,8 +7,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutterbasics/services/database.dart';
-import 'package:flutterbasics/main.dart';
+import 'package:visioncrafters/services/database.dart';
+import 'package:visioncrafters/main.dart';
 
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {

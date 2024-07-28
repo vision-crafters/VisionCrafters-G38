@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutterbasics/pages/chat_screen.dart';
+import 'package:visioncrafters/pages/chat_screen.dart';
 import 'package:sqflite/sqflite.dart';
-import 'package:flutterbasics/services/database.dart';
+import 'package:visioncrafters/services/database.dart';
 import 'dart:developer' as developer;
 import 'package:intl/intl.dart';
 

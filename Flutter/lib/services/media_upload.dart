@@ -4,8 +4,8 @@ import 'dart:developer' as developer;
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:uuid/uuid.dart';
-import '../providers/app_state.dart';
-import '../utils/chat_utils.dart';
+import 'package:visioncrafters/providers/app_state.dart';
+import 'package:visioncrafters/utils/chat_utils.dart';
 
 class MediaUploader {
   final storageRef = FirebaseStorage.instance.ref();

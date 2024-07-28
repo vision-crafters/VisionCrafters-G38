@@ -1,25 +1,25 @@
 import 'dart:io';
-import 'package:flutterbasics/services/flutter_tts.dart'; // for tts check in services folder
+import 'package:visioncrafters/services/flutter_tts.dart'; // for tts check in services folder
 import 'package:mime/mime.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:modal_progress_hud_nsn/modal_progress_hud_nsn.dart';
 import 'package:sqflite/sqflite.dart';
-import 'package:flutterbasics/widgets/message_bubble.dart';
-import 'package:flutterbasics/widgets/image_bubble.dart';
-import 'package:flutterbasics/widgets/video_bubble.dart';
-import 'package:flutterbasics/widgets/speech_to_text.dart';
-import 'package:flutterbasics/pages/settings.dart';
-import 'package:flutterbasics/pages/dashboard.dart';
-import 'package:flutterbasics/services/database.dart';
-import 'package:flutterbasics/services/media_picker.dart';
-import 'package:flutterbasics/services/media_saver.dart';
-import 'package:flutterbasics/services/media_upload.dart';
-import 'package:flutterbasics/providers/app_state.dart';
+import 'package:visioncrafters/widgets/message_bubble.dart';
+import 'package:visioncrafters/widgets/image_bubble.dart';
+import 'package:visioncrafters/widgets/video_bubble.dart';
+import 'package:visioncrafters/widgets/speech_to_text.dart';
+import 'package:visioncrafters/pages/settings.dart';
+import 'package:visioncrafters/pages/dashboard.dart';
+import 'package:visioncrafters/services/database.dart';
+import 'package:visioncrafters/services/media_picker.dart';
+import 'package:visioncrafters/services/media_saver.dart';
+import 'package:visioncrafters/services/media_upload.dart';
+import 'package:visioncrafters/providers/app_state.dart';
 import 'dart:developer' as developer;
-import 'package:flutterbasics/services/beep_sound.dart';
-import 'package:flutterbasics/widgets/dialog_box.dart';
+import 'package:visioncrafters/services/beep_sound.dart';
+import 'package:visioncrafters/widgets/dialog_box.dart';
 
 class HomePage extends StatefulWidget {
   final Database database;

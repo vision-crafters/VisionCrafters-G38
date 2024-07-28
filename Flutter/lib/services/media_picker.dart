@@ -3,11 +3,11 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'dart:developer' as developer;
 import '../providers/app_state.dart';
-import 'package:flutterbasics/pages/camera_preview_screen.dart';
-import 'package:flutterbasics/pages/video_recording_screen.dart';
+import 'package:visioncrafters/pages/camera_preview_screen.dart';
+import 'package:visioncrafters/pages/video_recording_screen.dart';
 import 'package:camera/camera.dart';
 import 'package:video_player/video_player.dart';
-import 'package:flutterbasics/widgets/dialog_box.dart';
+import 'package:visioncrafters/widgets/dialog_box.dart';
 import 'package:mime/mime.dart';
 
 class MediaPicker {

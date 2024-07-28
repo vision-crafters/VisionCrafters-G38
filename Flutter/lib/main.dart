@@ -3,10 +3,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
-import 'package:flutterbasics/firebase_options.dart';
-import 'package:flutterbasics/providers/app_state.dart';
-import 'package:flutterbasics/pages/home_page.dart';
-import 'package:flutterbasics/services/database.dart';
+import 'package:visioncrafters/firebase_options.dart';
+import 'package:visioncrafters/providers/app_state.dart';
+import 'package:visioncrafters/pages/home_page.dart';
+import 'package:visioncrafters/services/database.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:sqflite/sqflite.dart';
 
