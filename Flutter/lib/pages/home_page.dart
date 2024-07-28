@@ -2,20 +2,20 @@ import 'dart:developer' as developer;
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
-import 'package:flutterbasics/pages/dashboard.dart';
-import 'package:flutterbasics/pages/settings.dart';
-import 'package:flutterbasics/pages/speech_to_text.dart';
-import 'package:flutterbasics/providers/app_state.dart';
-import 'package:flutterbasics/services/beep_sound.dart';
-import 'package:flutterbasics/services/database.dart';
-import 'package:flutterbasics/services/flutter_tts.dart';
-import 'package:flutterbasics/services/media_picker.dart';
-import 'package:flutterbasics/services/media_saver.dart';
-import 'package:flutterbasics/services/media_upload.dart';
-import 'package:flutterbasics/widgets/image_bubble.dart';
-import 'package:flutterbasics/widgets/message_bubble.dart';
-import 'package:flutterbasics/widgets/video_bubble.dart';
-import 'package:flutterbasics/widgets/dialog_box.dart';
+import 'package:visioncrafters/pages/dashboard.dart';
+import 'package:visioncrafters/pages/settings.dart';
+import 'package:visioncrafters/providers/app_state.dart';
+import 'package:visioncrafters/services/beep_sound.dart';
+import 'package:visioncrafters/services/database.dart';
+import 'package:visioncrafters/services/flutter_tts.dart';
+import 'package:visioncrafters/services/media_picker.dart';
+import 'package:visioncrafters/services/media_saver.dart';
+import 'package:visioncrafters/services/media_upload.dart';
+import 'package:visioncrafters/widgets/image_bubble.dart';
+import 'package:visioncrafters/widgets/message_bubble.dart';
+import 'package:visioncrafters/widgets/video_bubble.dart';
+import 'package:visioncrafters/widgets/dialog_box.dart';
+import 'package:visioncrafters/widgets/speech_to_text.dart';
 import 'package:mime/mime.dart';
 import 'package:modal_progress_hud_nsn/modal_progress_hud_nsn.dart';
 import 'package:provider/provider.dart';
@@ -40,8 +40,9 @@ class _HomePageState extends State<HomePage> {
   final MediaPicker _mediaPicker = MediaPicker();
   final MediaSaver _mediaSaver = MediaSaver();
   final MediaUploader _mediaUploader = MediaUploader();
-  late File? fileName = null;
-  late String? mimeType = null;
+  File? fileName;
+  String? mimeType;
+  String? videoUrl;
   final TTSService _ttsService = TTSService();
   final BeepSound _beep = BeepSound();
   int conversationId = -1;
@@ -98,7 +99,8 @@ class _HomePageState extends State<HomePage> {
         _controller.clear();
         addMessage(id, 'user', message, '', '', 'message');
         final response = await _mediaUploader.uploadQuery(
-            messages, fileName, mimeType, appState);
+            messages, fileName, mimeType, appState, videoUrl);
+        videoUrl = response['videoUrl'];
         final id2 = await dbHelper.insertMessage(
             conversationId, 'assistant', response['Description']);
         _ttsService.setSpeechRate(0.6);
@@ -136,6 +138,7 @@ class _HomePageState extends State<HomePage> {
         addMessage(video['id'].toString(), 'user', '', mimeType, video['path'],
             'media');
         upload = await _mediaUploader.uploadVideo(fileName, mimeType, appState);
+        videoUrl = upload['videoUrl'];
       } else {
         throw Exception('Unsupported media type');
       }
@@ -191,6 +194,7 @@ class _HomePageState extends State<HomePage> {
 
       Map<String, dynamic> upload =
           await _mediaUploader.uploadVideo(fileName, mimeType, appState);
+      videoUrl = upload['videoUrl'];
       final id = await dbHelper.insertMessage(
           conversationId, "assistant", upload['Description']);
       addMessage(
@@ -290,7 +294,7 @@ class _HomePageState extends State<HomePage> {
     final appState = Provider.of<AppState>(context);
     return GestureDetector(
       onTap: () {
-        FocusScope.of(context).unfocus();
+        _focusNode.unfocus();
       },
       onDoubleTap: () {
         getImage(context, appState);
@@ -300,8 +304,8 @@ class _HomePageState extends State<HomePage> {
           context: context,
           builder: (context) => Speech(
             onSpeechResult: (result) {
-              _sendMessage(result, appState); // Pass speech result to sendMessage
               Navigator.pop(context);
+              _sendMessage(result, appState); // Pass speech result to sendMessage
             },
           ),
         );
@@ -415,7 +419,7 @@ class _HomePageState extends State<HomePage> {
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                        child: TextFormField(
+                        child: TextField(
                           controller: _controller,
                           focusNode: _focusNode,
                           decoration: InputDecoration(
@@ -424,23 +428,24 @@ class _HomePageState extends State<HomePage> {
                               borderRadius: BorderRadius.circular(10),
                             ),
                           ),
+                          onSubmitted: (value) => _sendMessage(value, appState),
                         ),
                       ),
                     ),
                     FloatingActionButton(
                       onPressed: _isFocused
                           ? () {
+                              _focusNode.unfocus();
                               _sendMessage(_controller.text, appState);
-                              FocusScope.of(context).unfocus();
                             }
                           : () {
                               showDialog(
                                 context: context,
                                 builder: (context) => Speech(
                                   onSpeechResult: (result) {
-                                    _sendMessage(result,
-                                        appState); // Pass speech result to sendMessage
                                     Navigator.pop(context);
+                                    _sendMessage(
+                                        result, appState); // Pass speech result to sendMessage
                                   },
                                 ),
                               );

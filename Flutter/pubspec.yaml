@@ -1,5 +1,5 @@
-name: flutterbasics
-description: "A new Flutter project."
+name: visioncrafters
+description: "VisionCrafters is a mobile application designed to assist visually impaired individuals in better navigating their surroundings. The app allows users to upload images and videos, which are then analyzed and described, providing detailed visual information to help users understand their environment."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: "none" # Remove this line if you wish to publish to pub.dev

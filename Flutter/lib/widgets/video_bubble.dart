@@ -13,7 +13,6 @@ class VideoPlayerWidget extends StatefulWidget {
 
 class VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   late VideoPlayerController _controller;
-  bool _isPlaying = false;
 
   @override
   void initState() {
@@ -26,7 +25,7 @@ class VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     _controller.addListener(() {
       if (_controller.value.position == _controller.value.duration) {
         setState(() {
-          _isPlaying = false;
+          _controller.seekTo(Duration.zero);
         });
       }
     });
@@ -40,12 +39,11 @@ class VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   void _togglePlayPause() {
     setState(() {
-      if (_isPlaying) {
+      if (_controller.value.isPlaying) {
         _controller.pause();
       } else {
         _controller.play();
       }
-      _isPlaying = !_isPlaying;
     });
   }
 
@@ -66,7 +64,7 @@ class VideoPlayerWidgetState extends State<VideoPlayerWidget> {
               IconButton(
                 onPressed: _togglePlayPause,
                 icon: Icon(
-                  _isPlaying ? Icons.pause : Icons.play_arrow,
+                  _controller.value.isPlaying ? Icons.pause : Icons.play_arrow,
                   color: Colors.white,
                 ),
               ),

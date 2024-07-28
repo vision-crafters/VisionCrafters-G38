@@ -53,7 +53,6 @@ def imageWithMiniCPM(messages:list,data:str,mime_type:str)->dict:
             response["Error"]=res["error"]
             return response
         response["Description"]=res["output"]
-    print(response)
     return response
 
 def videoWithMiniCPM(messages:list,data:str,mime_type:str)->dict:
@@ -105,7 +104,6 @@ def videoWithMiniCPM(messages:list,data:str,mime_type:str)->dict:
             response["Error"]=res["error"]
             return response
         response["Description"]=res["output"]
-    print(response)
     return response
 
 

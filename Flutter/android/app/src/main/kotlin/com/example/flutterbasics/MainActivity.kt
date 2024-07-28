@@ -1,4 +1,4 @@
-package com.example.flutterbasics
+package com.example.visioncrafters
 
 import io.flutter.embedding.android.FlutterActivity
 

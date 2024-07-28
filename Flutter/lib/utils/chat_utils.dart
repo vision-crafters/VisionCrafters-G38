@@ -27,6 +27,11 @@ List<Map<String, dynamic>> getChatHistory(List<Map<String, dynamic>> messages) {
 
     // Stop collecting messages after retrieving the latest 10
     if (count >= 10) {
+      // Check if the last message added is from the assistant
+      if (formattedMessages.last['role'] == 'assistant') {
+        // Remove the last message from the formattedMessages list
+        formattedMessages.removeLast();
+      }
       break;
     }
   }

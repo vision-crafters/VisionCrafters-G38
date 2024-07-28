@@ -1,16 +1,29 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
 import 'dart:io';
-
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:uuid/uuid.dart';
-
-import '../providers/app_state.dart';
-import '../utils/chat_utils.dart';
+import 'package:visioncrafters/providers/app_state.dart';
+import 'package:visioncrafters/utils/chat_utils.dart';
 
 class MediaUploader {
   final storageRef = FirebaseStorage.instance.ref();
+
+  Future<bool> fileExistsAtUrl(String url) async {
+    try {
+      final ref = FirebaseStorage.instance.refFromURL(url);
+      await ref.getMetadata();
+      return true;
+    } catch (e) {
+      if (e is FirebaseException && e.code == 'object-not-found') {
+        return false;
+      } else {
+        developer.log("Error checking file existence: $e");
+        return false;
+      }
+    }
+  }
 
   //function with parameters, used for uploading images
   Future<Map<String, dynamic>> uploadImage(
@@ -93,6 +106,7 @@ class MediaUploader {
 
     if (response.data != null) {
       final data = response.data;
+      data['videoUrl'] = videoUrl;
       developer.log(data
           .toString()); //this will be displayed on the debug console for verification purposes.
       appState.setSpinnerVisibility(
@@ -106,14 +120,13 @@ class MediaUploader {
   }
 
   Future<dynamic> uploadQuery(List<Map<String, dynamic>> messages, File? file,
-      String? mimeType, AppState appState) async {
+      String? mimeType, AppState appState, String? existingUrl) async {
     if (file == null) {
       developer.log('File is null');
       throw Exception('File is null');
     }
-appState.setSpinnerVisibility(true);
+    appState.setSpinnerVisibility(true);
     List<Map<String, dynamic>> conversation = getChatHistory(messages);
-    developer.log(conversation.toString());
     if (mimeType != null && mimeType.startsWith('image')) {
       final bytes = await file.readAsBytes();
       final base64Image = base64Encode(bytes);
@@ -126,18 +139,25 @@ appState.setSpinnerVisibility(true);
       if (response.data != null) {
         final data = response.data;
         developer.log(data.toString());
-appState.setSpinnerVisibility(false);
+        appState.setSpinnerVisibility(false);
         return data;
       } else {
-appState.setSpinnerVisibility(false);
+        appState.setSpinnerVisibility(false);
         developer.log("Failed to upload query for image .");
         throw Exception('Failed to upload query for image.');
       }
     } else if (mimeType != null && mimeType.startsWith('video')) {
-      final uniqueId = const Uuid().v1();
-      final fileRef = storageRef.child('$uniqueId.mp4');
-      await fileRef.putFile(file);
-      final videoUrl = await fileRef.getDownloadURL();
+      String? videoUrl;
+      if (existingUrl != null && await fileExistsAtUrl(existingUrl)) {
+        videoUrl = existingUrl;
+        developer.log("Using existing video URL: $videoUrl");
+      } else {
+        final uniqueId = const Uuid().v1();
+        final fileRef = storageRef.child('$uniqueId.mp4');
+        await fileRef.putFile(file);
+        videoUrl = await fileRef.getDownloadURL();
+        developer.log("Uploaded new video URL: $videoUrl");
+      }
       final response =
           await FirebaseFunctions.instance.httpsCallable('video', options: HttpsCallableOptions(timeout: const Duration(seconds: 180))).call({
         'data': videoUrl,
@@ -146,16 +166,17 @@ appState.setSpinnerVisibility(false);
       });
       if (response.data != null) {
         final data = response.data;
-appState.setSpinnerVisibility(false);
+        data['videoUrl'] = videoUrl;
+        appState.setSpinnerVisibility(false);
         developer.log(data.toString());
         return data;
       } else {
-appState.setSpinnerVisibility(false);
+        appState.setSpinnerVisibility(false);
         developer.log("Failed to upload query for video.");
         throw Exception('Failed to upload query for video.');
       }
     } else {
-appState.setSpinnerVisibility(false);
+      appState.setSpinnerVisibility(false);
       developer.log('Unsupported file format');
       throw Exception('Unsupported file format');
     }
