@@ -10,6 +10,22 @@ import '../utils/chat_utils.dart';
 class MediaUploader {
   final storageRef = FirebaseStorage.instance.ref();
 
+  Future<bool> fileExistsAtUrl(String url) async {
+    try {
+      final ref = FirebaseStorage.instance.refFromURL(url);
+      await ref.getMetadata();
+      return true;
+    } catch (e) {
+      if (e is FirebaseException && e.code == 'object-not-found') {
+        return false;
+      } else {
+        developer.log("Error checking file existence: $e");
+        return false;
+      }
+    }
+  }
+
+  
   //function with parameters, used for uploading images
   Future<Map<String, dynamic>> uploadImage(
       File? imageFile, String? mimeType, AppState appState) async {
@@ -91,6 +107,7 @@ class MediaUploader {
 
     if (response.data != null) {
       final data = response.data;
+      data['videoUrl'] = videoUrl;
       developer.log(data
           .toString()); //this will be displayed on the debug console for verification purposes.
       appState.setSpinnerVisibility(
@@ -104,14 +121,13 @@ class MediaUploader {
   }
 
   Future<dynamic> uploadQuery(List<Map<String, dynamic>> messages, File? file,
-      String? mimeType, String query) async {
+      String? mimeType, String query, String? existingUrl) async {
     if (file == null) {
       developer.log('File is null');
       throw Exception('File is null');
     }
 
     List<Map<String, dynamic>> conversation = getChatHistory(messages);
-    developer.log(conversation.toString());
     if (mimeType != null && mimeType.startsWith('image')) {
       final bytes = await file.readAsBytes();
       final base64Image = base64Encode(bytes);
@@ -130,10 +146,17 @@ class MediaUploader {
         throw Exception('Failed to upload query for image.');
       }
     } else if (mimeType != null && mimeType.startsWith('video')) {
-      final uniqueId = const Uuid().v1();
-      final fileRef = storageRef.child('$uniqueId.mp4');
-      await fileRef.putFile(file);
-      final videoUrl = await fileRef.getDownloadURL();
+      String? videoUrl;
+      if (existingUrl != null && await fileExistsAtUrl(existingUrl)) {
+        videoUrl = existingUrl;
+        developer.log("Using existing video URL: $videoUrl");
+      } else {
+        final uniqueId = const Uuid().v1();
+        final fileRef = storageRef.child('$uniqueId.mp4');
+        await fileRef.putFile(file);
+        videoUrl = await fileRef.getDownloadURL();
+        developer.log("Uploaded new video URL: $videoUrl");
+      }
       final response =
           await FirebaseFunctions.instance.httpsCallable('video', options: HttpsCallableOptions(timeout: const Duration(seconds: 180))).call({
         'data': videoUrl,
@@ -142,6 +165,7 @@ class MediaUploader {
       });
       if (response.data != null) {
         final data = response.data;
+        data['videoUrl'] = videoUrl;
         developer.log(data.toString());
         return data;
       } else {

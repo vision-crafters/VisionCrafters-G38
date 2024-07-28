@@ -40,8 +40,9 @@ class _HomePageState extends State<HomePage> {
   final MediaPicker _mediaPicker = MediaPicker();
   final MediaSaver _mediaSaver = MediaSaver();
   final MediaUploader _mediaUploader = MediaUploader();
-  late File? fileName = null;
-  late String? mimeType = null;
+  File? fileName;
+  String? mimeType;
+  String? videoUrl;
   final TTSService _ttsService = TTSService();
   final BeepSound _beep = BeepSound();
   int conversationId = -1;
@@ -98,7 +99,8 @@ class _HomePageState extends State<HomePage> {
         _controller.clear();
         addMessage(id, 'user', message, '', '', 'message');
         final response = await _mediaUploader.uploadQuery(
-            messages, fileName, mimeType, message);
+            messages, fileName, mimeType, message, videoUrl);
+        videoUrl = response['videoUrl'];
         final id2 = await dbHelper.insertMessage(
             conversationId, 'assistant', response['Description']);
         _ttsService.setSpeechRate(0.6);
@@ -136,6 +138,7 @@ class _HomePageState extends State<HomePage> {
         addMessage(video['id'].toString(), 'user', '', mimeType, video['path'],
             'media');
         upload = await _mediaUploader.uploadVideo(fileName, mimeType, appState);
+        videoUrl = upload['videoUrl'];
       } else {
         throw Exception('Unsupported media type');
       }
@@ -190,6 +193,7 @@ class _HomePageState extends State<HomePage> {
 
       Map<String, dynamic> upload =
           await _mediaUploader.uploadVideo(fileName, mimeType, appState);
+      videoUrl = upload['videoUrl'];
       final id = await dbHelper.insertMessage(
           conversationId, "assistant", upload['Description']);
       addMessage(
