@@ -9,7 +9,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:flutterbasics/widgets/message_bubble.dart';
 import 'package:flutterbasics/widgets/image_bubble.dart';
 import 'package:flutterbasics/widgets/video_bubble.dart';
-import 'package:flutterbasics/pages/speech_to_text.dart';
+import 'package:flutterbasics/widgets/speech_to_text.dart';
 import 'package:flutterbasics/pages/settings.dart';
 import 'package:flutterbasics/pages/dashboard.dart';
 import 'package:flutterbasics/services/database.dart';
@@ -293,7 +293,7 @@ class _HomePageState extends State<HomePage> {
     final appState = Provider.of<AppState>(context);
     return GestureDetector(
       onTap: () {
-        FocusScope.of(context).unfocus();
+        _focusNode.unfocus();
       },
       onDoubleTap: () {
         getImage(context, appState);
@@ -303,8 +303,8 @@ class _HomePageState extends State<HomePage> {
           context: context,
           builder: (context) => Speech(
             onSpeechResult: (result) {
-              _sendMessage(result); // Pass speech result to sendMessage
               Navigator.pop(context);
+              _sendMessage(result); // Pass speech result to sendMessage
             },
           ),
         );
@@ -413,7 +413,7 @@ class _HomePageState extends State<HomePage> {
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                        child: TextFormField(
+                        child: TextField(
                           controller: _controller,
                           focusNode: _focusNode,
                           decoration: InputDecoration(
@@ -422,6 +422,7 @@ class _HomePageState extends State<HomePage> {
                               borderRadius: BorderRadius.circular(10),
                             ),
                           ),
+                          onSubmitted: (value) => _sendMessage(value),
                         ),
                       ),
                     ),
@@ -429,16 +430,16 @@ class _HomePageState extends State<HomePage> {
                       onPressed: _isFocused
                           ? () {
                               _sendMessage(_controller.text);
-                              FocusScope.of(context).unfocus();
+                              _focusNode.unfocus();
                             }
                           : () {
                               showDialog(
                                 context: context,
                                 builder: (context) => Speech(
                                   onSpeechResult: (result) {
+                                    Navigator.pop(context);
                                     _sendMessage(
                                         result); // Pass speech result to sendMessage
-                                    Navigator.pop(context);
                                   },
                                 ),
                               );

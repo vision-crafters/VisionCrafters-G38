@@ -34,7 +34,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final FocusNode _focusNode = FocusNode();
   List<Map<String, dynamic>> messages = [];
   late int conversationId;
-  String conversation_title = '';
+  String conversationTitle = '';
 
   @override
   void initState() {
@@ -62,7 +62,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _getTitle() async {
-    conversation_title = await dbHelper.getTitleByID(conversationId);
+    conversationTitle = await dbHelper.getTitleByID(conversationId);
     setState(() {});
   }
 
@@ -72,7 +72,7 @@ class _ChatScreenState extends State<ChatScreen> {
     return GestureDetector(
       child: Scaffold(
         appBar: AppBar(
-          title: Text(conversation_title), // Use conversation_title here
+          title: Text(conversationTitle), // Use conversation_title here
           actions: [
             IconButton(
               icon: const Icon(Icons.chat_bubble_outline_rounded),

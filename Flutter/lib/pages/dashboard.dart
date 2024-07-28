@@ -8,13 +8,13 @@ import 'package:intl/intl.dart';
 class DashBoardScreen extends StatefulWidget {
   final Database database;
 
-  const DashBoardScreen({Key? key, required this.database}) : super(key: key);
+  const DashBoardScreen({super.key, required this.database});
 
   @override
-  _DashBoardState createState() => _DashBoardState();
+  DashBoardState createState() => DashBoardState();
 }
 
-class _DashBoardState extends State<DashBoardScreen> {
+class DashBoardState extends State<DashBoardScreen> {
   late Database database;
   final DatabaseHelper dbHelper = DatabaseHelper.instance;
   List<Map<String, dynamic>> conversations = [];
@@ -22,6 +22,7 @@ class _DashBoardState extends State<DashBoardScreen> {
   Future<void> _load() async {
     List<Map<String, dynamic>> items = await dbHelper.getAllConversations();
     conversations = List<Map<String, dynamic>>.from(items);
+    conversations = conversations.where((item) => item["title"] != null).toList();
     developer.log('Conversations: ${conversations.toString()}');
     setState(() {});
   }
@@ -40,14 +41,14 @@ class _DashBoardState extends State<DashBoardScreen> {
           SafeArea(
             child: Container(
               height: 70,
-              color: Colors.white,
+              color: Colors.white70,
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: const Row(
                 children: [
                   CircleAvatar(
                     radius: 30,
                     backgroundImage: AssetImage('assets/images/logo.jpg'),
-                    backgroundColor: Colors.transparent,
+                    backgroundColor: Colors.white,
                   ),
                 ],
               ),
