@@ -1,25 +1,25 @@
+import 'dart:developer' as developer;
 import 'dart:io';
-import 'package:visioncrafters/services/flutter_tts.dart'; // for tts check in services folder
-import 'package:mime/mime.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
-import 'package:modal_progress_hud_nsn/modal_progress_hud_nsn.dart';
-import 'package:sqflite/sqflite.dart';
-import 'package:visioncrafters/widgets/message_bubble.dart';
-import 'package:visioncrafters/widgets/image_bubble.dart';
-import 'package:visioncrafters/widgets/video_bubble.dart';
-import 'package:visioncrafters/widgets/speech_to_text.dart';
-import 'package:visioncrafters/pages/settings.dart';
 import 'package:visioncrafters/pages/dashboard.dart';
+import 'package:visioncrafters/pages/settings.dart';
+import 'package:visioncrafters/providers/app_state.dart';
+import 'package:visioncrafters/services/beep_sound.dart';
 import 'package:visioncrafters/services/database.dart';
+import 'package:visioncrafters/services/flutter_tts.dart';
 import 'package:visioncrafters/services/media_picker.dart';
 import 'package:visioncrafters/services/media_saver.dart';
 import 'package:visioncrafters/services/media_upload.dart';
-import 'package:visioncrafters/providers/app_state.dart';
-import 'dart:developer' as developer;
-import 'package:visioncrafters/services/beep_sound.dart';
+import 'package:visioncrafters/widgets/image_bubble.dart';
+import 'package:visioncrafters/widgets/message_bubble.dart';
+import 'package:visioncrafters/widgets/video_bubble.dart';
 import 'package:visioncrafters/widgets/dialog_box.dart';
+import 'package:visioncrafters/widgets/speech_to_text.dart';
+import 'package:mime/mime.dart';
+import 'package:modal_progress_hud_nsn/modal_progress_hud_nsn.dart';
+import 'package:provider/provider.dart';
+import 'package:sqflite/sqflite.dart';
 
 class HomePage extends StatefulWidget {
   final Database database;
@@ -83,7 +83,7 @@ class _HomePageState extends State<HomePage> {
     setState(() {});
   }
 
-  void _sendMessage(String text) async {
+  void _sendMessage(String text, AppState appState) async {
     String message = text.trim();
     if (fileName == null) {
       DialogBox.showErrorDialog(context, 'No File Selected',
@@ -99,7 +99,7 @@ class _HomePageState extends State<HomePage> {
         _controller.clear();
         addMessage(id, 'user', message, '', '', 'message');
         final response = await _mediaUploader.uploadQuery(
-            messages, fileName, mimeType, message, videoUrl);
+            messages, fileName, mimeType, appState, videoUrl);
         videoUrl = response['videoUrl'];
         final id2 = await dbHelper.insertMessage(
             conversationId, 'assistant', response['Description']);
@@ -176,7 +176,8 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Future<void> getVideo(BuildContext context, AppState appState) async {
+  Future<void> getVideo(BuildContext context, AppState appState,
+      DragStartDetails? details) async {
     fileName = await _mediaPicker.getVideoFile(context, appState);
     if (fileName == null) {
       return;
@@ -304,27 +305,31 @@ class _HomePageState extends State<HomePage> {
           builder: (context) => Speech(
             onSpeechResult: (result) {
               Navigator.pop(context);
-              _sendMessage(result); // Pass speech result to sendMessage
+              _sendMessage(result, appState); // Pass speech result to sendMessage
             },
           ),
         );
+      },
+      onHorizontalDragStart: (DragStartDetails? details) {
+        getVideo(context, appState, details);
       },
       child: Scaffold(
         appBar: AppBar(
           title: const Text("Vision Crafters"),
           actions: [
             IconButton(
-                icon: const Icon(Icons.chat_bubble_outline_rounded),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => HomePage(
-                        database: widget.database,
-                      ),
+              icon: const Icon(Icons.chat_bubble_outline_rounded),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => HomePage(
+                      database: widget.database,
                     ),
-                  );
-                }),
+                  ),
+                );
+              },
+            ),
             IconButton(
               icon: const Icon(Icons.settings),
               onPressed: () {
@@ -387,7 +392,8 @@ class _HomePageState extends State<HomePage> {
                     FloatingActionButton(
                       shape: const CircleBorder(),
                       heroTag: "UniqueTag2",
-                      onPressed: () {},
+                      onPressed:
+                          () {}, // onPressed is required but does not need to do anything
                       child: SpeedDial(
                         animatedIcon: AnimatedIcons.menu_close,
                         direction: SpeedDialDirection.up,
@@ -400,7 +406,7 @@ class _HomePageState extends State<HomePage> {
                           SpeedDialChild(
                             shape: const CircleBorder(),
                             child: const Icon(Icons.video_call),
-                            onTap: () => getVideo(context, appState),
+                            onTap: () => getVideo(context, appState, null),
                           ),
                           SpeedDialChild(
                             shape: const CircleBorder(),
@@ -422,15 +428,15 @@ class _HomePageState extends State<HomePage> {
                               borderRadius: BorderRadius.circular(10),
                             ),
                           ),
-                          onSubmitted: (value) => _sendMessage(value),
+                          onSubmitted: (value) => _sendMessage(value, appState),
                         ),
                       ),
                     ),
                     FloatingActionButton(
                       onPressed: _isFocused
                           ? () {
-                              _sendMessage(_controller.text);
                               _focusNode.unfocus();
+                              _sendMessage(_controller.text, appState);
                             }
                           : () {
                               showDialog(
@@ -439,7 +445,7 @@ class _HomePageState extends State<HomePage> {
                                   onSpeechResult: (result) {
                                     Navigator.pop(context);
                                     _sendMessage(
-                                        result); // Pass speech result to sendMessage
+                                        result, appState); // Pass speech result to sendMessage
                                   },
                                 ),
                               );
