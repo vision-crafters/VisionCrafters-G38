@@ -63,6 +63,7 @@ class MediaPicker {
           if (videoPlayerController.value.duration.inSeconds > 10) {
             videoPlayerController.dispose();
             appState.setSpinnerVisibility(false);
+            if(!context.mounted) return null;
             DialogBox.showErrorDialog(context, 'Video Length Error',
                 'The selected video is longer than 10 seconds. Please choose a video of 10 seconds or less.');
             return null;
@@ -103,7 +104,7 @@ class MediaPicker {
       rearCamera,
       ResolutionPreset.high,
     );
-
+    if(!context.mounted) return null;
     final pickedFile = await Navigator.push(
       context,
       MaterialPageRoute(
@@ -129,7 +130,7 @@ class MediaPicker {
       rearCamera,
       ResolutionPreset.high,
     );
-
+    if(!context.mounted) return null;
     final pickedFile = await Navigator.push(
       context,
       MaterialPageRoute(
