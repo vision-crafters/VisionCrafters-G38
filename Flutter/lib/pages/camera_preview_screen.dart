@@ -33,7 +33,7 @@ class CameraPreviewScreenState extends State<CameraPreviewScreen> {
       await _initializeControllerFuture;
 
       XFile picture = await _controller.takePicture();
-
+      if(!mounted) return;
       Navigator.pop(context, picture);
     } catch (e) {
       developer.log(e.toString());

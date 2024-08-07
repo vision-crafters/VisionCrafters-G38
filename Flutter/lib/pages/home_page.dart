@@ -103,13 +103,13 @@ class _HomePageState extends State<HomePage> {
         videoUrl = response['videoUrl'];
         final id2 = await dbHelper.insertMessage(
             conversationId, 'assistant', response['Description']);
-        _ttsService.setSpeechRate(0.6);
-        _ttsService.setLanguage("hi-IN");
         _ttsService.speak(response['Description']);
         addMessage(
             id2, 'assistant', response['Description'], '', '', 'message');
         _scrollToBottom(); // Scroll to the bottom after sending a message
       } catch (e) {
+        appState.setSpinnerVisibility(false);
+        if(!mounted) return;
         DialogBox.showErrorDialog(context, 'Message Send Failed',
             'The message could not be sent. Please try again.');
       }
@@ -157,12 +157,11 @@ class _HomePageState extends State<HomePage> {
         await Future.delayed(
             const Duration(seconds: 1)); // make a delay after beep
       }
-      _ttsService.setSpeechRate(0.6);
-      _ttsService.setLanguage("hi-IN");
       _ttsService.speak(upload['Description']);
       _scrollToBottom(); // Scroll to the bottom after sending a message
     } catch (e) {
       appState.setSpinnerVisibility(false);
+      if(!context.mounted) return;
       if (mimeType != null && mimeType!.startsWith('image')) {
         DialogBox.showErrorDialog(context, 'Image Upload Failed',
             'The image could not be uploaded from media. Please try again.');
@@ -209,12 +208,11 @@ class _HomePageState extends State<HomePage> {
         await Future.delayed(
             const Duration(seconds: 1)); // make a delay after beep
       }
-      _ttsService.setSpeechRate(0.6);
-      _ttsService.setLanguage("hi-IN");
       _ttsService.speak(upload['Description']);
       _scrollToBottom();
     } catch (e) {
       appState.setSpinnerVisibility(false);
+      if(!context.mounted) return;
       DialogBox.showErrorDialog(context, 'Video Upload Failed',
           'The video could not be uploaded. Please try again.');
     }
@@ -251,12 +249,11 @@ class _HomePageState extends State<HomePage> {
         await Future.delayed(
             const Duration(seconds: 1)); // make a delay after beep
       }
-      _ttsService.setSpeechRate(0.6);
-      _ttsService.setLanguage("hi-IN");
       _ttsService.speak(upload['Description']);
       _scrollToBottom(); // Scroll to the bottom after sending a message
     } catch (e) {
       appState.setSpinnerVisibility(false);
+      if(!context.mounted) return;
       DialogBox.showErrorDialog(context, 'Image Upload Failed',
           'The image could not be uploaded. Please try again.');
     }

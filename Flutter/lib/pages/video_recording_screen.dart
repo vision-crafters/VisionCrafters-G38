@@ -72,7 +72,7 @@ class VideoRecordingScreenState extends State<VideoRecordingScreen> {
     setState(() {
       _isRecording = false;
     });
-
+    if(!mounted) return;
     Navigator.pop(context, newFile);
   }
 
