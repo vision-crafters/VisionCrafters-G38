@@ -54,6 +54,7 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _focusNode.addListener(_onFocusChange);
+    _ttsService.setSpeechRate(0.7);
     if (conversationId != -1) {
       _loadMessages();
       flag = false;
