@@ -30,7 +30,7 @@ void main() async {
   }
 
   runApp(
-      MyApp(database: database));  //Launches the root widget of the application
+      MyApp(database: database)); //Launches the root widget of the application
 }
 
 class MyApp extends StatelessWidget {

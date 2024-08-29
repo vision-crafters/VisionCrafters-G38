@@ -34,8 +34,8 @@ def image(req: https_fn.CallableRequest):
     data = req.data.get('data') # Get the image data from the request
     mime_type = req.data.get('mime_type') # Get the mime type of the image from the request
 
-    response=imageWithGemini(query=query,data=data,mime_type=mime_type) # Get the response from the gemini model  
-    # response=imageWithMiniCPM(messages=query,data=data,mime_type=mime_type) # Get the response from the miniCPM model
+    # response=imageWithGemini(query=query,data=data,mime_type=mime_type) # Get the response from the gemini model  
+    response=imageWithMiniCPM(messages=query,data=data,mime_type=mime_type) # Get the response from the miniCPM model
     print(response)
     return response
 
@@ -47,7 +47,7 @@ def video(req: https_fn.CallableRequest):
     data = req.data.get('data') # Get the video data from the request
     mime_type = req.data.get('mime_type') # Get the mime type of the video from the request
     
-    response=videoWithGemini(query=query,data=data,mime_type=mime_type) # Get the response from the gemini model
-    # response=videoWithMiniCPM(messages=query,data=data,mime_type=mime_type) # Get the response from the miniCPM model
+    # response=videoWithGemini(query=query,data=data,mime_type=mime_type) # Get the response from the gemini model
+    response=videoWithMiniCPM(messages=query,data=data,mime_type=mime_type) # Get the response from the miniCPM model
     print(response)
     return response
