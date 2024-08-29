@@ -158,9 +158,9 @@ async def ragQuerying(data:str,query:str)->str:
                 print("No context found, maximum retries reached")
                 break
             context=vectorstore.similarity_search(response["vector_search_query"],k=3)
-        # if context:
-            # for doc in context:
-                # print(str(doc["text"]))
+        if context:
+            for doc in context:
+                print(str(doc["text"]))
         prompt=f"System prompt: Please answer the following question. If the question requires additional context to answer, use the provided documents in the context.\n context: {context}\n question: {textpart}\n"
 
         return prompt

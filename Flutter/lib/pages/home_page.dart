@@ -1,25 +1,25 @@
-import 'dart:io';
-import 'package:flutterbasics/services/flutter_tts.dart'; // for tts check in services folder
-import 'package:mime/mime.dart';
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:flutter_speed_dial/flutter_speed_dial.dart';
-import 'package:modal_progress_hud_nsn/modal_progress_hud_nsn.dart';
-import 'package:sqflite/sqflite.dart';
-import 'package:flutterbasics/widgets/message_bubble.dart';
-import 'package:flutterbasics/widgets/image_bubble.dart';
-import 'package:flutterbasics/widgets/video_bubble.dart';
-import 'package:flutterbasics/pages/speech_to_text.dart';
-import 'package:flutterbasics/pages/settings.dart';
-import 'package:flutterbasics/pages/dashboard.dart';
-import 'package:flutterbasics/services/database.dart';
-import 'package:flutterbasics/services/media_picker.dart';
-import 'package:flutterbasics/services/media_saver.dart';
-import 'package:flutterbasics/services/media_upload.dart';
-import 'package:flutterbasics/providers/app_state.dart';
 import 'dart:developer' as developer;
-import 'package:flutterbasics/services/beep_sound.dart';
-import 'package:flutterbasics/widgets/dialog_box.dart';
+import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:flutter_speed_dial/flutter_speed_dial.dart';
+import 'package:visioncrafters/pages/dashboard.dart';
+import 'package:visioncrafters/pages/settings.dart';
+import 'package:visioncrafters/providers/app_state.dart';
+import 'package:visioncrafters/services/beep_sound.dart';
+import 'package:visioncrafters/services/database.dart';
+import 'package:visioncrafters/services/flutter_tts.dart';
+import 'package:visioncrafters/services/media_picker.dart';
+import 'package:visioncrafters/services/media_saver.dart';
+import 'package:visioncrafters/services/media_upload.dart';
+import 'package:visioncrafters/widgets/image_bubble.dart';
+import 'package:visioncrafters/widgets/message_bubble.dart';
+import 'package:visioncrafters/widgets/video_bubble.dart';
+import 'package:visioncrafters/widgets/dialog_box.dart';
+import 'package:visioncrafters/widgets/speech_to_text.dart';
+import 'package:mime/mime.dart';
+import 'package:modal_progress_hud_nsn/modal_progress_hud_nsn.dart';
+import 'package:provider/provider.dart';
+import 'package:sqflite/sqflite.dart';
 
 class HomePage extends StatefulWidget {
   final Database database;
@@ -40,8 +40,9 @@ class _HomePageState extends State<HomePage> {
   final MediaPicker _mediaPicker = MediaPicker();
   final MediaSaver _mediaSaver = MediaSaver();
   final MediaUploader _mediaUploader = MediaUploader();
-  late File? fileName = null;
-  late String? mimeType = null;
+  File? fileName;
+  String? mimeType;
+  String? videoUrl;
   final TTSService _ttsService = TTSService();
   final BeepSound _beep = BeepSound();
   int conversationId = -1;
@@ -82,7 +83,7 @@ class _HomePageState extends State<HomePage> {
     setState(() {});
   }
 
-  void _sendMessage(String text) async {
+  void _sendMessage(String text, AppState appState) async {
     String message = text.trim();
     if (fileName == null) {
       DialogBox.showErrorDialog(context, 'No File Selected',
@@ -98,16 +99,17 @@ class _HomePageState extends State<HomePage> {
         _controller.clear();
         addMessage(id, 'user', message, '', '', 'message');
         final response = await _mediaUploader.uploadQuery(
-            messages, fileName, mimeType, message);
+            messages, fileName, mimeType, appState, videoUrl);
+        videoUrl = response['videoUrl'];
         final id2 = await dbHelper.insertMessage(
             conversationId, 'assistant', response['Description']);
-        _ttsService.setSpeechRate(0.6);
-        _ttsService.setLanguage("hi-IN");
         _ttsService.speak(response['Description']);
         addMessage(
             id2, 'assistant', response['Description'], '', '', 'message');
         _scrollToBottom(); // Scroll to the bottom after sending a message
       } catch (e) {
+        appState.setSpinnerVisibility(false);
+        if(!mounted) return;
         DialogBox.showErrorDialog(context, 'Message Send Failed',
             'The message could not be sent. Please try again.');
       }
@@ -136,6 +138,7 @@ class _HomePageState extends State<HomePage> {
         addMessage(video['id'].toString(), 'user', '', mimeType, video['path'],
             'media');
         upload = await _mediaUploader.uploadVideo(fileName, mimeType, appState);
+        videoUrl = upload['videoUrl'];
       } else {
         throw Exception('Unsupported media type');
       }
@@ -154,12 +157,11 @@ class _HomePageState extends State<HomePage> {
         await Future.delayed(
             const Duration(seconds: 1)); // make a delay after beep
       }
-      _ttsService.setSpeechRate(0.6);
-      _ttsService.setLanguage("hi-IN");
       _ttsService.speak(upload['Description']);
       _scrollToBottom(); // Scroll to the bottom after sending a message
     } catch (e) {
       appState.setSpinnerVisibility(false);
+      if(!context.mounted) return;
       if (mimeType != null && mimeType!.startsWith('image')) {
         DialogBox.showErrorDialog(context, 'Image Upload Failed',
             'The image could not be uploaded from media. Please try again.');
@@ -173,7 +175,8 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Future<void> getVideo(BuildContext context, AppState appState) async {
+  Future<void> getVideo(BuildContext context, AppState appState,
+      DragStartDetails? details) async {
     fileName = await _mediaPicker.getVideoFile(context, appState);
     if (fileName == null) {
       return;
@@ -190,6 +193,7 @@ class _HomePageState extends State<HomePage> {
 
       Map<String, dynamic> upload =
           await _mediaUploader.uploadVideo(fileName, mimeType, appState);
+      videoUrl = upload['videoUrl'];
       final id = await dbHelper.insertMessage(
           conversationId, "assistant", upload['Description']);
       addMessage(
@@ -204,12 +208,11 @@ class _HomePageState extends State<HomePage> {
         await Future.delayed(
             const Duration(seconds: 1)); // make a delay after beep
       }
-      _ttsService.setSpeechRate(0.6);
-      _ttsService.setLanguage("hi-IN");
       _ttsService.speak(upload['Description']);
       _scrollToBottom();
     } catch (e) {
       appState.setSpinnerVisibility(false);
+      if(!context.mounted) return;
       DialogBox.showErrorDialog(context, 'Video Upload Failed',
           'The video could not be uploaded. Please try again.');
     }
@@ -246,12 +249,11 @@ class _HomePageState extends State<HomePage> {
         await Future.delayed(
             const Duration(seconds: 1)); // make a delay after beep
       }
-      _ttsService.setSpeechRate(0.6);
-      _ttsService.setLanguage("hi-IN");
       _ttsService.speak(upload['Description']);
       _scrollToBottom(); // Scroll to the bottom after sending a message
     } catch (e) {
       appState.setSpinnerVisibility(false);
+      if(!context.mounted) return;
       DialogBox.showErrorDialog(context, 'Image Upload Failed',
           'The image could not be uploaded. Please try again.');
     }
@@ -289,7 +291,7 @@ class _HomePageState extends State<HomePage> {
     final appState = Provider.of<AppState>(context);
     return GestureDetector(
       onTap: () {
-        FocusScope.of(context).unfocus();
+        _focusNode.unfocus();
       },
       onDoubleTap: () {
         getImage(context, appState);
@@ -299,28 +301,32 @@ class _HomePageState extends State<HomePage> {
           context: context,
           builder: (context) => Speech(
             onSpeechResult: (result) {
-              _sendMessage(result); // Pass speech result to sendMessage
               Navigator.pop(context);
+              _sendMessage(result, appState); // Pass speech result to sendMessage
             },
           ),
         );
+      },
+      onHorizontalDragStart: (DragStartDetails? details) {
+        getVideo(context, appState, details);
       },
       child: Scaffold(
         appBar: AppBar(
           title: const Text("Vision Crafters"),
           actions: [
             IconButton(
-                icon: const Icon(Icons.chat_bubble_outline_rounded),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => HomePage(
-                        database: widget.database,
-                      ),
+              icon: const Icon(Icons.chat_bubble_outline_rounded),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => HomePage(
+                      database: widget.database,
                     ),
-                  );
-                }),
+                  ),
+                );
+              },
+            ),
             IconButton(
               icon: const Icon(Icons.settings),
               onPressed: () {
@@ -383,7 +389,8 @@ class _HomePageState extends State<HomePage> {
                     FloatingActionButton(
                       shape: const CircleBorder(),
                       heroTag: "UniqueTag2",
-                      onPressed: () {},
+                      onPressed:
+                          () {}, // onPressed is required but does not need to do anything
                       child: SpeedDial(
                         animatedIcon: AnimatedIcons.menu_close,
                         direction: SpeedDialDirection.up,
@@ -396,7 +403,7 @@ class _HomePageState extends State<HomePage> {
                           SpeedDialChild(
                             shape: const CircleBorder(),
                             child: const Icon(Icons.video_call),
-                            onTap: () => getVideo(context, appState),
+                            onTap: () => getVideo(context, appState, null),
                           ),
                           SpeedDialChild(
                             shape: const CircleBorder(),
@@ -409,7 +416,7 @@ class _HomePageState extends State<HomePage> {
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                        child: TextFormField(
+                        child: TextField(
                           controller: _controller,
                           focusNode: _focusNode,
                           decoration: InputDecoration(
@@ -418,23 +425,24 @@ class _HomePageState extends State<HomePage> {
                               borderRadius: BorderRadius.circular(10),
                             ),
                           ),
+                          onSubmitted: (value) => _sendMessage(value, appState),
                         ),
                       ),
                     ),
                     FloatingActionButton(
                       onPressed: _isFocused
                           ? () {
-                              _sendMessage(_controller.text);
-                              FocusScope.of(context).unfocus();
+                              _focusNode.unfocus();
+                              _sendMessage(_controller.text, appState);
                             }
                           : () {
                               showDialog(
                                 context: context,
                                 builder: (context) => Speech(
                                   onSpeechResult: (result) {
-                                    _sendMessage(
-                                        result); // Pass speech result to sendMessage
                                     Navigator.pop(context);
+                                    _sendMessage(
+                                        result, appState); // Pass speech result to sendMessage
                                   },
                                 ),
                               );

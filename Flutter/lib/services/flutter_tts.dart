@@ -13,7 +13,7 @@ class TTSService {
     _voices = List<Map>.from(await _flutterTts.getVoices);
     _voices = _voices.where((voice) => voice["name"].contains("en")).toList();
     if (_voices.isNotEmpty) {
-      _currentVoice = _voices.first[2];
+      _currentVoice = _voices.first;
       setVoice(_currentVoice!);
     }
     
